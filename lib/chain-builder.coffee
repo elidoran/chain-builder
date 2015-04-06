@@ -1,7 +1,5 @@
 
-### #################### ###
-# Not yet supporting 'had' #
-### #################### ###
+had = require 'had'
 
 # TODO:
 #  1. `had` support reporting status from within fn's? control ones and theirs
