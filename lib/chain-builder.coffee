@@ -30,7 +30,7 @@ module.exports = builder =                    # export singleton object
             err = "[#{i}] not a function: #{fn}"# include index and value
             throw new Error err                 # throw it (TODO: use `had`)
 
-      return (context) ->                     # return new function, the chain
+      return (context={}) ->                  # return new function, the chain
         for fn in array                       # loop over provided functions
           okay = do (fn) ->                   # run in own scope, hold return result
             try                               # grab errors in chain calls
@@ -69,7 +69,7 @@ module.exports = builder =                    # export singleton object
           err = "[#{i}] not a function: #{fn}"# include index and value
           throw new Error err                 # throw it (TODO: use `had`)
 
-    return (context) ->                       # return new function, pipeline
+    return (context={}) ->                       # return new function, pipeline
       i = 0                                   # start with first fn in array
       caller = (context, next) ->             # new fn calls their fn
         fn = array[i]                         # get next function
