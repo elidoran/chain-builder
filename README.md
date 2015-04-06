@@ -140,25 +140,22 @@ result = chain()
 
 ## Advanced Contexts
 
-There are two "contexts" which we have been the *same* in all the above examples.
-It is possible to make them different for advanced used. Please be careful :)
+There are two "contexts" which have been the *same* in all the above examples.
+It is possible to make them different for advanced use. Please be careful :)
 
 ### The two contexts
 
-1. `context` : the argument passed to your function
+1. **shared context** : the argument passed to your function
 
 ```coffeescript
-(context) -> console.log '<-- that context'
+    (context) -> console.log '<-- that context'
 ```
 
-2. `this` : the *this* while your function is executing
+2. **this context** : the *this* while your function is executing
 
 ```coffeescript
-(context) -> console.log 'that context-->'+this.someProperty
+    (context) -> console.log 'that context-->'+this.someProperty
 ```
-
-I call #1 the "shared context".
-I call #2 the "this context".
 
 ### How to specify the `this` context
 
@@ -201,18 +198,18 @@ Example:
 ```coffeescript
 builder = require 'chain-builder'
 
-specificThis = some:'special this'
+specificThis = some:'special this'  # make a sample object for options.this
 
 fn = (next, sharedContext) ->
   console.log '*this* is specificThis. some=', this.some
   console.log 'sharedContext is a shared ', sharedContext.shared
   next sharedContext # not *this*
 
-fn.options = this:specificThis
+fn.options = this:specificThis   # set it in the functions options object
 
 chain = builder.pipeline fn
 
-chain shared:'object'
+chain shared:'object'            # provided the *shared context*
 
 # prints:
 #   *this* is specificThis. some=special this
@@ -220,6 +217,12 @@ chain shared:'object'
 
 ```
 
+That is, unless you *want* to override the shared context with something else.
+You still can.
+
+Also, keep in mind the function executed next may have its own `options.this`
+set which will be applied as `this` instead of the object you provide to your
+`next` call. That will still become the *shared context* of the next call.
 
 
 ## Usage: Pipeline
