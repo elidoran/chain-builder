@@ -11,14 +11,14 @@
 
 module.exports = builder =                    # export singleton object
 
-  chain: (array) ->                           # build chain over array
+  chain: (array...) ->                        # build chain over array
 
     unless array?                             # null/undefined ?
       # TODO: use had to respond with error   # use `had` instead
       throw new Error 'null array param'      # throw error,
 
-    if typeof array is 'function'             # single argument can be function
-      array = [array]                         # so wrap it in an array
+    if array?[0]?.push?                       # splat causes wrapped array
+      array = array[0]                        # unwrap array
 
     if array?.length > 0                      # avoid work for empty array
 
@@ -48,14 +48,14 @@ module.exports = builder =                    # export singleton object
       return -> true                          # noop fn returns true
 
 
-  pipeline: (array) ->                        # build pipeline over array
+  pipeline: (array...) ->                     # build pipeline over array
 
     unless array?                             # null/undefined ?
       # TODO: use had to respond with error   # use `had` instead
       throw new Error 'null array param'      # throw error,
 
-    if typeof array is 'function'             # single argument can be function
-      array = [array]                         # so wrap it in an array
+    if array?[0]?.push?                       # splat causes wrapped array
+      array = array[0]                        # unwrap array
 
     unless array?.length > 0                  # avoid work for empty array
       # TODO: warning. had'd warn
