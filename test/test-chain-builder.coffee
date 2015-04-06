@@ -181,7 +181,7 @@ describe 'test building chains/pipelines', ->
 
     it 'should be unaffected by altering array after build', ->
       ctx = ran1: false, ran2: false
-      com1 = (context) -> context.ran1 = true
+      com1 = (context, next) -> context.ran1 = true ; next context
       com2 = (context) -> context.ran2 = true
       array = [com1]
       fn = builder.pipeline array
@@ -221,7 +221,7 @@ describe 'test building chains/pipelines', ->
 
     describe 'test adding value to context', ->
 
-      it 'should be available to next command', ->
+      it 'should be available to next command in chain', ->
         ctx = {}
         com1 = (context) -> context.add = 'added'
         com2 = (context) -> if context?.add? then context.seen = true
@@ -230,3 +230,41 @@ describe 'test building chains/pipelines', ->
         assert.equal result, true
         assert.equal ctx.add, 'added'
         assert.equal ctx.seen, true
+
+      it 'should be available to next command in pipeline', ->
+        ctx = {}
+        com1 = (context, next) -> context.add = 'added' ; next context
+        com2 = (context, next) ->
+          if context?.add? then context.seen = true
+          next context
+        fn = builder.pipeline [com1, com2]
+        result = fn ctx
+        assert.equal ctx.seen, true
+        assert.equal ctx.add, 'added'
+
+    describe 'test not passing a context to chain', ->
+
+      it 'should have an empty object context', ->
+        test = ran: false, context: false
+        com1 = (context) ->
+          test.ran = true
+          if context? then test.context = true
+        fn = builder.chain [com1]
+        result = fn()
+        assert.equal result, true, 'result should be true'
+        assert.equal test.ran, true
+        assert.equal test.context, true
+
+    describe 'test not passing a context to pipeline', ->
+
+      it 'should have an empty object context', ->
+        test = ran: false, context: false
+        com1 = (context, next) ->
+          test.ran = true
+          if context? then test.context = true
+          next context
+        fn = builder.pipeline [com1]
+        result = fn()
+        assert.equal result, true, 'result should be true'
+        assert.equal test.ran, true
+        assert.equal test.context, true
