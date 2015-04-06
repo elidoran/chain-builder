@@ -69,13 +69,16 @@ module.exports = builder =                    # export singleton object
           err = "[#{i}] not a function: #{fn}"# include index and value
           throw new Error err                 # throw it (TODO: use `had`)
 
-    return (context={}) ->                       # return new function, pipeline
+    return (ctx={}) ->                        # return new function, pipeline
       i = 0                                   # start with first fn in array
       caller = (context, next) ->             # new fn calls their fn
         fn = array[i]                         # get next function
-        if fn?                                # if it exists TODO: check type?
-          fn context, next                    # call with provided args
-        else return false                     # send false up the pipeline
+        try                                   # catch errors from call
+          return fn context, next             # call with provided args
+        catch e
+          console.log 'pipeline: error', e    # report to console. TODO: remove?
+          context.chainError = e              # store error in context
+          return false                        # end chain with false return
 
       repeater = (context) ->                 # the 'next' function
         i++                                   # advance 'i'
@@ -83,4 +86,4 @@ module.exports = builder =                    # export singleton object
           caller context, repeater            # call it with context+next
         else true                             # successful pipeline, return true
 
-      return caller context, repeater         # initiate pipeline, return result
+      return caller ctx, repeater             # initiate pipeline, return result
