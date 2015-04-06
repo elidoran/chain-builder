@@ -33,8 +33,9 @@ module.exports = builder =                    # export singleton object
       return (context={}) ->                  # return new function, the chain
         for fn in array                       # loop over provided functions
           okay = do (fn) ->                   # run in own scope, hold return result
+            itsThis = fn?.options?.this ? context
             try                               # grab errors in chain calls
-              return fn.call context, context # calls function with context=this
+              return fn.call itsThis, context # calls function with context=itsThis
             catch e
               console.log 'chain: error', e   # report to console. TODO: remove?
               context.chainError = e          # store error in context
@@ -73,8 +74,9 @@ module.exports = builder =                    # export singleton object
       i = 0                                   # start with first fn in array
       caller = (next, context) ->             # new fn calls their fn
         fn = array[i]                         # get next function
+        itsThis = fn?.options?.this ? context
         try                                   # catch errors from call
-          return fn.call context, next, context # call: context=this
+          return fn.call itsThis, next, context # call: context=itsThis
         catch e
           console.log 'pipeline: error', e    # report to console. TODO: remove?
           context.chainError = e              # store error in context
