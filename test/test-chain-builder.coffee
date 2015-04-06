@@ -113,7 +113,6 @@ describe 'test building chains/pipelines', ->
       it 'should return an noop function', ->
         fn = builder.chain []
         noop = /function\s?\(\)\s?{\n\s*return true;\n\s*}/
-        console.log 'noop:',fn
         assert.equal noop.test(''+fn), true
 
     describe 'test empty pipeline', ->
