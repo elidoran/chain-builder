@@ -1,0 +1,24 @@
+{
+  "name": "chain-builder",
+  "version": "0.1.0",
+  "description": "Build chain of command function from an array of functions",
+  "main": "index.js",
+  "author": "Eli Doran <eli@elidoran.com>",
+  "license": "MIT",
+  "scripts": {
+    "compile": "coffee -c lib",
+    "clean": "rm -rf ./lib/*.js",
+    "prepublish": "coffee --bare --compile lib",
+    "postpublish": "rm -rf ./lib/*.js",
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/elidoran/chain-builder.git"
+  },
+  "bugs": "http://github.com/elidoran/chain-builder/issues",
+  "devDependencies": {
+    "coffee-script": "^1.9.1",
+    "mocha": "^2.2.1"
+  }
+}
