@@ -377,3 +377,38 @@ describe 'test building chains/pipelines', ->
         result = fn ctx
         assert.equal result, true
         assert.equal ctx.found, true
+
+  describe 'test optional *this* on function', ->
+
+    describe 'test for chain', ->
+
+      it 'should make *this* equal to object in options.this', ->
+        thiss = accessed:false
+        options = this: thiss
+        ctx = available:false
+        com1 = (sharedContext) ->
+          this.accessed = true
+          sharedContext.available = true
+        com1.options = options
+        fn = builder.chain [ com1 ]
+        result = fn ctx
+        assert.equal result, true
+        assert.equal ctx.available, true
+        assert.equal thiss.accessed, true
+
+    describe 'test for pipeline', ->
+
+      it 'should make *this* equal to object in options.this', ->
+        thiss = accessed:false
+        options = this: thiss
+        ctx = available:false
+        com1 = (next, sharedContext) ->
+          this.accessed = true
+          sharedContext.available = true
+          next sharedContext
+        com1.options = options
+        fn = builder.pipeline [ com1 ]
+        result = fn ctx
+        assert.equal ctx.available, true, 'ctx.available should be true'
+        assert.equal thiss.accessed, true, 'thiss.accessed should be true'
+        assert.equal result, true
