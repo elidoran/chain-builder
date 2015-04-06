@@ -113,6 +113,7 @@ describe 'test building chains/pipelines', ->
       it 'should return an noop function', ->
         fn = builder.chain []
         noop = /function\s?\(\)\s?{\n\s*return true;\n\s*}/
+        console.log 'noop:',fn
         assert.equal noop.test(''+fn), true
 
     describe 'test empty pipeline', ->
@@ -144,26 +145,79 @@ describe 'test building chains/pipelines', ->
         assert.equal ctx.ran, true
         assert.equal result, true
 
-    describe 'test passing function to chain', ->
+  describe 'test providing functions instead of array', ->
 
-      it 'should give a chain for the single function', ->
-        ctx =
-          ran: false
+    describe 'test one function to chain', ->
+
+      it 'should give a chain for the one function', ->
+        ctx = ran:false
         com = (context) -> context.ran = true
         fn = builder.chain com
         result = fn ctx
         assert.equal ctx.ran, true
         assert.equal result, true
 
-    describe 'test passing function to pipeline', ->
+    describe 'test one function to pipeline', ->
 
-      it 'should give a pipeline for the single function', ->
-        ctx =
-          ran: false
+      it 'should give a pipeline for the one function', ->
+        ctx = ran:false
         com = (next, context) -> context.ran = true ; next context
         fn = builder.pipeline com
         result = fn ctx
         assert.equal ctx.ran, true
+        assert.equal result, true
+
+    describe 'test two functions to chain', ->
+
+      it 'should give a chain for the two functions', ->
+        ctx = ran1: false, ran2: false
+        com1 = (context) -> context.ran1 = true
+        com2 = (context) -> context.ran2 = true
+        fn = builder.chain com1, com2
+        result = fn ctx
+        assert.equal ctx.ran1, true
+        assert.equal ctx.ran2, true
+        assert.equal result, true
+
+    describe 'test two functions to pipeline', ->
+
+      it 'should give a pipeline for the two functions', ->
+        ctx = ran1: false, ran2: false
+        com1 = (next, context) -> context.ran1 = true ; next context
+        com2 = (next, context) -> context.ran2 = true ; next context
+        fn = builder.pipeline com1, com2
+        result = fn ctx
+        assert.equal ctx.ran1, true
+        assert.equal ctx.ran2, true
+        assert.equal result, true
+
+    describe 'test three functions to chain', ->
+
+      it 'should give a chain for the three functions', ->
+        ctx = ran1: false, ran2: false, ran3: false
+        com1 = (context) -> context.ran1 = true
+        com2 = (context) -> context.ran2 = true
+        com3 = (context) -> context.ran3 = true
+        fn = builder.chain com1, com2, com3
+        result = fn ctx
+        assert.equal ctx.ran1, true
+        assert.equal ctx.ran2, true
+        assert.equal ctx.ran3, true
+        assert.equal result, true
+
+    describe 'test three functions to pipeline', ->
+
+      it 'should give a pipeline for the three functions', ->
+        ctx = ran1: false, ran2: false, ran3: false
+        com1 = (next, context) -> context.ran1 = true ; next context
+        com2 = (next, context) -> context.ran2 = true ; next context
+        com3 = (next, context) -> context.ran3 = true ; next context
+        fn = builder.pipeline com1, com2, com3
+        result = fn ctx
+        assert.equal ctx.ran1, true
+        assert.equal ctx.ran2, true
+        assert.equal ctx.ran3, true
+        assert.equal result, true
         assert.equal result, true
 
   describe 'test array is cloned in chain', ->
