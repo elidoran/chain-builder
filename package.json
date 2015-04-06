@@ -1,6 +1,6 @@
 {
   "name": "chain-builder",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Build chain of command function from an array of functions",
   "main": "index.js",
   "author": "Eli Doran <eli@elidoran.com>",
