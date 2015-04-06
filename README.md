@@ -17,7 +17,7 @@ May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pi
 
 ```coffeescript
 builder = require 'chain-builder'
-chain = builder.chain (ctx) -> console.log ctx.message
+chain = builder.chain -> console.log this.message
 result = chain message:'hello'
 # prints 'hello'
 # result is true
@@ -71,6 +71,8 @@ Use `pipeline` if it's important to:
 builder = require 'chain-builder'
 
 fn1 = (context) -> console.log context.message
+# context = this  so, the below is equivalent
+#fn1 = -> console.log this.message
 
 array = [ fn1 ]
 
@@ -88,8 +90,8 @@ result = chain message:'hello'
 ```coffeescript
 builder = require 'chain-builder'
 
-fn1 = (context) -> if context.problem then return false
-fn2 = (context) -> console.log 'I won\'t run'
+fn1 = -> if this.problem then return false
+fn2 = -> console.log 'I won\'t run'
 
 array = [ fn1, fn2 ]
 
@@ -106,8 +108,8 @@ result = chain problem:true
 ```coffeescript
 builder = require 'chain-builder'
 
-fn1 = (context) -> context.give = 'high 5'
-fn2 = (context) -> if context.give is 'high 5' then 'cheer'
+fn1 = -> this.give = 'high 5'
+fn2 = -> if this.give is 'high 5' then 'cheer'
 
 array = [ fn1, fn2 ]
 
@@ -124,7 +126,7 @@ result = chain()                # will use an empty object as context
 ```coffeescript
 builder = require 'chain-builder'
 
-fn1 = (context) -> throw new Error 'my bad'
+fn1 = -> throw new Error 'my bad'
 
 chain = builder.chain fn1           # Example without array
 
@@ -151,7 +153,9 @@ result = chain()
 ```javascript
 builder = require('chain-builder');
 
-fn1 = function(context) { console.log(context.message); };
+fn1 = function() { console.log(this.message); };
+// context = this  so, the below is equivalent
+//fn1 function() { console.log(this.message); };
 
 array = [fn1];
 
@@ -168,8 +172,8 @@ result = chain({ message: 'hello' });
 ```javascript
 builder = require('chain-builder');
 
-fn1 = function(context) { if(context.problem) return false; };
-fn2 = function(context) { console.log('I won\'t run'); };
+fn1 = function() { if(this.problem) return false; };
+fn2 = function() { console.log('I won\'t run'); };
 
 array = [ fn1, fn2 ];
 
@@ -188,8 +192,8 @@ result = chain({problem:true});
 ```javascript
 builder = require('chain-builder');
 
-fn1 = function(context) { context.give = 'high 5'; };
-fn2 = function(context) { if(context.give === 'high 5') return 'cheer'; };
+fn1 = function() { this.give = 'high 5'; };
+fn2 = function() { if(this.give === 'high 5') return 'cheer'; };
 
 array = [ fn1, fn2 ];
 
@@ -207,7 +211,7 @@ result = chain();
 ```javascript
 builder = require('chain-builder');
 
-fn1 = function(context) { throw new Error('my bad'); };
+fn1 = function() { throw new Error('my bad'); };
 
 chain = builder.chain fn1
 
