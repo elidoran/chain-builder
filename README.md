@@ -205,7 +205,7 @@ fn = (next, sharedContext) ->
   console.log 'sharedContext is a shared ', sharedContext.shared
   next sharedContext # not *this*
 
-fn.options = this:specificThis   # set it in the functions options object
+fn.options = this:specificThis   # set it in the function's options object
 
 chain = builder.pipeline fn
 
