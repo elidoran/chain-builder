@@ -138,7 +138,7 @@ describe 'test building chains/pipelines', ->
       it 'should give a pipeline for the single function', ->
         ctx =
           ran: false
-        com = (context, next) -> context.ran = true ; next context
+        com = (next, context) -> context.ran = true ; next context
         fn = builder.pipeline [com]
         result = fn ctx
         assert.equal ctx.ran, true
@@ -160,7 +160,7 @@ describe 'test building chains/pipelines', ->
       it 'should give a pipeline for the single function', ->
         ctx =
           ran: false
-        com = (context, next) -> context.ran = true ; next context
+        com = (next, context) -> context.ran = true ; next context
         fn = builder.pipeline com
         result = fn ctx
         assert.equal ctx.ran, true
@@ -181,7 +181,7 @@ describe 'test building chains/pipelines', ->
 
     it 'should be unaffected by altering array after build', ->
       ctx = ran1: false, ran2: false
-      com1 = (context, next) -> context.ran1 = true ; next context
+      com1 = (next, context) -> context.ran1 = true ; next context
       com2 = (context) -> context.ran2 = true
       array = [com1]
       fn = builder.pipeline array
@@ -233,8 +233,8 @@ describe 'test building chains/pipelines', ->
 
       it 'should be available to next command in pipeline', ->
         ctx = {}
-        com1 = (context, next) -> context.add = 'added' ; next context
-        com2 = (context, next) ->
+        com1 = (next, context) -> context.add = 'added' ; next context
+        com2 = (next, context) ->
           if context?.add? then context.seen = true
           next context
         fn = builder.pipeline [com1, com2]
@@ -259,7 +259,7 @@ describe 'test building chains/pipelines', ->
 
       it 'should have an empty object context', ->
         test = ran: false, context: false
-        com1 = (context, next) ->
+        com1 = (next, context) ->
           test.ran = true
           if context? then test.context = true
           next context
@@ -268,3 +268,59 @@ describe 'test building chains/pipelines', ->
         assert.equal result, true, 'result should be true'
         assert.equal test.ran, true
         assert.equal test.context, true
+
+  describe 'test applying context as *this*', ->
+
+    describe 'test accessing context value from this', ->
+
+      it 'should be available from this in chain', ->
+        ctx = found:false
+        com1 = -> this.found = true
+        fn = builder.chain [ com1 ]
+        result = fn ctx
+        assert.equal result, true
+        assert.equal ctx.found, true
+
+      it 'should be available from this in pipeline', ->
+        ctx = found:false
+        com1 = (next, context) -> this.found = true ; next context
+        fn = builder.pipeline [ com1 ]
+        result = fn ctx
+        assert.equal result, true
+        assert.equal ctx.found, true
+
+    describe 'test adding value to *this*', ->
+
+      it 'should be available to next command in chain', ->
+        ctx = {}
+        com1 = () -> this.add = 'added'
+        com2 = () -> if this?.add? then this.seen = true
+        fn = builder.chain [com1, com2]
+        result = fn ctx
+        assert.equal result, true
+        assert.equal ctx.add, 'added'
+        assert.equal ctx.seen, true
+
+      it 'should be available to next command in pipeline', ->
+        ctx = {}
+        com1 = (next, context) -> this.add = 'added' ; next context
+        com2 = (next, context) ->
+          if this?.add? then this.seen = true
+          next context
+        fn = builder.pipeline [com1, com2]
+        result = fn ctx
+        assert.equal ctx.seen, true
+        assert.equal ctx.add, 'added'
+
+    describe 'test calling next with *this*', ->
+
+      it 'should work same as context', ->
+        ctx = changed:false, found:false
+        com1 = (next, context) -> context.changed = true ; next this
+        com2 = (next, context) ->
+          if context.changed then context.found = true
+          next context
+        fn = builder.pipeline [ com1, com2 ]
+        result = fn ctx
+        assert.equal result, true
+        assert.equal ctx.found, true
