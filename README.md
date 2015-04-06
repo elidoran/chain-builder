@@ -3,9 +3,9 @@
 [![Dependency Status](https://gemnasium.com/elidoran/chain-builder.png)](https://gemnasium.com/elidoran/chain-builder)
 [![npm version](https://badge.fury.io/js/chain-builder.svg)](http://badge.fury.io/js/chain-builder)
 
-Builds a **synchronous** chain of command function from an array of functions.
+Builds a **synchronous** "chain of command" function from an array of functions.
 
-May choose from two styles: [chain](#usage-chain) and [pipeline](#usage-pipeline)
+May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pipeline](#usage-pipeline)
 
 
 ## Install
@@ -49,7 +49,7 @@ Use `chain` because it's nicer to avoid requiring dev's to call the next all the
 
 Use `pipeline` if it's important to:
 
-1. allow doing work **after** other members have executed
+1. allow doing work **after** later members have executed
 2. provide a **different** context object to later members
 
 
@@ -58,12 +58,12 @@ Use `pipeline` if it's important to:
 1. passing a single function, without an array, will be treated as an array with a single function
 2. passing multiple function arguments (not an array) will be treated as an array of those functions
 3. a provided array will be cloned (shallow) so later changes to array do not affect the chain (rebuild chain if you need to)
-4. array will be validated during the build for non-function elements
+4. array will be validated during the *build* for non-function elements (fail fast)
 
 
 ## Usage: Chain
 
-[JavaScript Usage Example](#javascript-style-usage-chain)
+[JavaScript Usage Example](#javascript-style-usage)
 
 ### Simple
 
@@ -91,9 +91,9 @@ builder = require 'chain-builder'
 fn1 = (context) -> if context.problem then return false
 fn2 = (context) -> console.log 'I won\'t run'
 
-array = [ fn1, fn2 ]           # passing functions as args also works
+array = [ fn1, fn2 ]
 
-chain = builder.chain array
+chain = builder.chain array    # passing functions as args also works
 
 result = chain problem:true
 
@@ -109,11 +109,11 @@ builder = require 'chain-builder'
 fn1 = (context) -> context.give = 'high 5'
 fn2 = (context) -> if context.give is 'high 5' then 'cheer'
 
-array = [ fn1, fn2 ]           # passing functions as args also works
+array = [ fn1, fn2 ]
 
-chain = builder.chain array
+chain = builder.chain array     # passing functions as args also works
 
-result = chain problem:true
+result = chain()                # will use an empty object as context
 
 # fn2 will, uh, *cheer*
 # result = true
@@ -126,9 +126,7 @@ builder = require 'chain-builder'
 
 fn1 = (context) -> throw new Error 'my bad'
 
-array = [ fn1 ]           # passing function as arg also works
-
-chain = builder.chain array
+chain = builder.chain fn1           # Example without array
 
 result = chain()
 
@@ -173,9 +171,11 @@ builder = require('chain-builder');
 fn1 = function(context) { if(context.problem) return false; };
 fn2 = function(context) { console.log('I won\'t run'); };
 
-array = [ fn1, fn2 ];           // passing functions as args also works
+array = [ fn1, fn2 ];
 
 chain = builder.chain(array);
+// passing functions as args also works
+// chain = builder.chain(fn1, fn2);
 
 result = chain({problem:true});
 
@@ -191,11 +191,12 @@ builder = require('chain-builder');
 fn1 = function(context) { context.give = 'high 5'; };
 fn2 = function(context) { if(context.give === 'high 5') return 'cheer'; };
 
-array = [ fn1, fn2 ];           // passing functions as args also works
+array = [ fn1, fn2 ];
 
 chain = builder.chain(array);
+// chain = builder.chain(fn1, fn2);  // passing functions as args also works
 
-result = chain({problem:true});
+result = chain();
 
 // fn2 will, uh, *cheer*
 // result = true
@@ -208,11 +209,9 @@ builder = require('chain-builder');
 
 fn1 = function(context) { throw new Error('my bad'); };
 
-array = [ fn1 ];           // passing function as arg also works
+chain = builder.chain fn1
 
-chain = builder.chain(array);
-
-context = {};
+context = {};   // declare our own context to extract chainError later
 
 result = chain(context);
 
