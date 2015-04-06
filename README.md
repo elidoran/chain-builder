@@ -59,7 +59,7 @@ Use `pipeline` if it's important to:
 2. passing multiple function arguments (not an array) will be treated as an array of those functions
 3. a provided array will be cloned (shallow) so later changes to array do not affect the chain (rebuild chain if you need to)
 4. array will be validated during the *build* for non-function elements (fail fast)
-
+5. ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
 
 ## Usage: Chain
 
@@ -137,6 +137,89 @@ result = chain()
 # result = false
 # context.chainError is the thrown Error object
 ```
+
+## Advanced Contexts
+
+There are two "contexts" which we have been the *same* in all the above examples.
+It is possible to make them different for advanced used. Please be careful :)
+
+### The two contexts
+
+1. `context` : the argument passed to your function
+
+```coffeescript
+(context) -> console.log '<-- that context'
+```
+
+2. `this` : the *this* while your function is executing
+
+```coffeescript
+(context) -> console.log 'that context-->'+this.someProperty
+```
+
+I call #1 the "shared context".
+I call #2 the "this context".
+
+### How to specify the `this` context
+
+You may provide an options object on your function which includes a
+`this` property. When you do, *that* `this` will be set as the *this* for
+your function.
+
+```coffeescript
+builder = require 'chain-builder'
+
+specificThis = some:'special this'
+
+fn = (sharedContext) ->
+  console.log '*this* is specificThis. some=', this.some
+  console.log 'sharedContext is a shared ', sharedContext.shared
+
+fn.options = this:specificThis
+
+chain = builder.chain fn
+
+chain shared:'object'
+
+# prints:
+#   *this* is specificThis. some=special this
+#   sharedContext is a shared object
+
+```
+
+### For a Pipeline too?
+
+Yes. With pipelines it is more important to be mindful because we
+control the *shared context* with our `next` calls.
+
+We are often using only the *shared context*, so, calling `next context` is
+the right thing to do. When using different contexts it is still the right thing
+to do, so, it *should* be easy to remember to do it.
+
+Example:
+
+```coffeescript
+builder = require 'chain-builder'
+
+specificThis = some:'special this'
+
+fn = (next, sharedContext) ->
+  console.log '*this* is specificThis. some=', this.some
+  console.log 'sharedContext is a shared ', sharedContext.shared
+  next sharedContext # not *this*
+
+fn.options = this:specificThis
+
+chain = builder.pipeline fn
+
+chain shared:'object'
+
+# prints:
+#   *this* is specificThis. some=special this
+#   sharedContext is a shared object
+
+```
+
 
 
 ## Usage: Pipeline
