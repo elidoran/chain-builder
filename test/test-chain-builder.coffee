@@ -1,26 +1,192 @@
 assert = require 'assert'
 builder = require '../index'
 
-describe 'test building chains', ->
-  before ->
+describe 'test building chains/pipelines', ->
+  #before ->
+  #beforeEach '', ->
 
-  beforeEach 'placeholder', ->
+  describe 'test passing bad values to chain/pipeline', ->
 
-  describe 'test empty chain', ->
+    describe 'test null to chain', ->
 
-    it 'should return an noop function', ->
-      fn = builder.chain []
-      assert.equal ''+fn, -> true
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain null
 
-  describe 'test single input to chain', ->
+    describe 'test null to pipeline', ->
 
-    it 'should give a chain for the single function', ->
-      context =
-        ran: false
-      com = (context) -> context.ran = true
-      fn = builder.chain [com]
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline null
+
+    describe 'test undefined to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain undefined
+
+    describe 'test undefined to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline undefined
+
+    describe 'test undefined in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain [undefined]
+
+    describe 'test undefined in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline [undefined]
+
+    describe 'test null in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain [null]
+
+    describe 'test null in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline [null]
+
+    describe 'test Object in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain [{}]
+
+    describe 'test Object in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline [{}]
+
+    describe 'test string in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain ['string']
+
+    describe 'test string in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline ['string']
+
+    describe 'test number in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain [-1]
+
+    describe 'test number in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline [-1]
+
+    describe 'test Date in array to chain', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.chain [new Date()]
+
+    describe 'test Date in array to pipeline', ->
+
+      it 'should throw error', -> # TODO: use `had` instead
+        assert.throws ->
+          builder.pipeline [new Date()]
+
+    # TODO: check error message above to ensure index is 0 and value is reported
+    # TODO: make more of those which have the invalid value later in the array
+
+  describe 'test successful runs', ->
+
+    describe 'test empty chain', ->
+
+      it 'should return an noop function', ->
+        fn = builder.chain []
+        noop = /function\s?\(\)\s?{\n\s*return true;\n\s*}/
+        assert.equal noop.test(''+fn), true
+
+    describe 'test empty pipeline', ->
+
+      it 'should return an noop function', ->
+        fn = builder.pipeline []
+
+    describe 'test single input to chain', ->
+
+      it 'should give a chain for the single function', ->
+        context =
+          ran: false
+        com = (context) -> context.ran = true
+        fn = builder.chain [com]
+        result = fn context
+        assert.equal context.ran, true
+        assert.equal result, true
+
+    describe 'test single input to pipeline', ->
+
+      it 'should give a pipeline for the single function', ->
+        context =
+          ran: false
+        com = (context, next) -> context.ran = true ; next context
+        fn = builder.pipeline [com]
+        result = fn context
+        assert.equal context.ran, true
+        assert.equal result, true
+
+    describe 'test passing function to chain', ->
+
+      it 'should give a chain for the single function', ->
+        context =
+          ran: false
+        com = (context) -> context.ran = true
+        fn = builder.chain com
+        result = fn context
+        assert.equal context.ran, true
+        assert.equal result, true
+
+    describe 'test passing function to pipeline', ->
+
+      it 'should give a pipeline for the single function', ->
+        context =
+          ran: false
+        com = (context, next) -> context.ran = true ; next context
+        fn = builder.pipeline com
+        result = fn context
+        assert.equal context.ran, true
+        assert.equal result, true
+
+  describe 'test array is cloned in chain', ->
+
+    it 'should be unaffected by altering array after build', ->
+      context = ran: false
+      array = []
+      fn = builder.chain array
+      array.push (context) -> context.ran = true
       result = fn context
-      assert.equal context.ran, true
+      assert.equal context.ran, false
+      assert.equal result, true
+
+  describe 'test array is cloned in pipeline', ->
+
+    it 'should be unaffected by altering array after build', ->
+      context = ran1: false, ran2: false
+      com1 = (context) -> context.ran1 = true
+      com2 = (context) -> context.ran2 = true
+      array = [com1]
+      fn = builder.pipeline array
+      array.push com2
+      result = fn context
+      assert.equal context.ran1, true
+      assert.equal context.ran2, false
       assert.equal result, true
 
   describe 'test stopping chain with false return', ->
