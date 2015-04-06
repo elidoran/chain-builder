@@ -34,7 +34,7 @@ module.exports = builder =                    # export singleton object
         for fn in array                       # loop over provided functions
           okay = do (fn) ->                   # run in own scope, hold return result
             try                               # grab errors in chain calls
-              return fn context               # calls function, return result
+              return fn.call context, context # calls function with context=this
             catch e
               console.log 'chain: error', e   # report to console. TODO: remove?
               context.chainError = e          # store error in context
@@ -71,19 +71,19 @@ module.exports = builder =                    # export singleton object
 
     return (ctx={}) ->                        # return new function, pipeline
       i = 0                                   # start with first fn in array
-      caller = (context, next) ->             # new fn calls their fn
+      caller = (next, context) ->             # new fn calls their fn
         fn = array[i]                         # get next function
         try                                   # catch errors from call
-          return fn context, next             # call with provided args
+          return fn.call context, next, context # call: context=this
         catch e
           console.log 'pipeline: error', e    # report to console. TODO: remove?
           context.chainError = e              # store error in context
           return false                        # end chain with false return
 
-      repeater = (context) ->                 # the 'next' function
+      repeater = (context=ctx) ->             # the 'next' function
         i++                                   # advance 'i'
         if i < array.length                   # check there is another fn
-          caller context, repeater            # call it with context+next
+          caller repeater, context            # call it with context+next
         else true                             # successful pipeline, return true
 
-      return caller ctx, repeater             # initiate pipeline, return result
+      return caller repeater, ctx             # initiate pipeline, return result
