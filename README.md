@@ -17,10 +17,14 @@ May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pi
 
 ```coffeescript
 builder = require 'chain-builder'
-chain = builder.chain -> console.log this.message
-result = chain message:'hello'
+result = builder.chain -> console.log this.message
+result = result.chain message:'hello'
 # prints 'hello'
-# result is true
+# result is {success:true}
+
+# CoffeeScript destructing : ignore result and use chain
+{chain} = builder.chain -> console.log this.message
+chain message:'hello'
 ```
 
 
@@ -71,17 +75,18 @@ Use `pipeline` if it's important to:
 builder = require 'chain-builder'
 
 fn1 = (context) -> console.log context.message
-# context = this  so, the below is equivalent
+# context = this  # so, the below is equivalent
 #fn1 = -> console.log this.message
 
 array = [ fn1 ]
 
-chain = builder.chain array     # passing function itself also works
+result = builder.chain array     # passing function itself also works
+# result is {success:true, chain:Function}
 
-result = chain message:'hello'
+result = result.chain message:'hello'
 
 # prints 'hello' to the console
-# result is true
+# result is {success:true}
 
 ```
 
@@ -95,12 +100,12 @@ fn2 = -> console.log 'I won\'t run'
 
 array = [ fn1, fn2 ]
 
-chain = builder.chain array    # passing functions as args also works
+result = builder.chain array    # passing functions as args also works
+# result is {success:true, chain:Function}
 
-result = chain problem:true
-
+result = result.chain problem:true
 # fn2 will never run.
-# result = false
+# result is {error:'received false', type:'chaining'}
 ```
 
 ### Use Context to Pass on a Value
@@ -113,12 +118,12 @@ fn2 = -> if this.give is 'high 5' then 'cheer'
 
 array = [ fn1, fn2 ]
 
-chain = builder.chain array     # passing functions as args also works
+result = builder.chain array     # passing functions as args also works
+# result is {success:true, chain:Function}
 
-result = chain()                # will use an empty object as context
-
+result = result.chain()          # will use an empty object as context
 # fn2 will, uh, *cheer*
-# result = true
+# result is {success:true}
 ```
 
 ### Throw Error
@@ -128,14 +133,14 @@ builder = require 'chain-builder'
 
 fn1 = -> throw new Error 'my bad'
 
-chain = builder.chain fn1           # Example without array
+result = builder.chain fn1           # Example without array
+# result is {success:true, chain:Function}
 
-result = chain()
+result = result.chain()
 
 # fn1 will throw an error
-# chain will catch it, record it into: context.chainError, and return false
-# result = false
-# context.chainError is the thrown Error object
+# chain will catch it, end the chain, and include it in the result
+# result is {error:'chain function threw error', type:'caught', Error:Error}
 ```
 
 ## Advanced Contexts
@@ -174,14 +179,14 @@ fn = (sharedContext) ->
 
 fn.options = this:specificThis
 
-chain = builder.chain fn
+result = builder.chain fn
+# result is {success:true, chain:Function}
 
-chain shared:'object'
+result.chain shared:'object'
 
 # prints:
 #   *this* is specificThis. some=special this
 #   sharedContext is a shared object
-
 ```
 
 ### For a Pipeline too?
@@ -207,14 +212,14 @@ fn = (next, sharedContext) ->
 
 fn.options = this:specificThis   # set it in the function's options object
 
-chain = builder.pipeline fn
+result = builder.pipeline fn
+# result is {success:true, pipeline:Function}
 
-chain shared:'object'            # provided the *shared context*
+result.pipeline shared:'object'  # provided the *shared context*
 
 # prints:
 #   *this* is specificThis. some=special this
 #   sharedContext is a shared object
-
 ```
 
 That is, unless you *want* to override the shared context with something else.
@@ -245,12 +250,15 @@ fn1 = function() { console.log(this.message); };
 
 array = [fn1];
 
-chain = builder.chain(array);
+result = builder.chain(array);
+// result is {success:true, chain:Function}
+// passing functions as args also works
+// result = builder.chain(fn1, fn2);
 
-result = chain({ message: 'hello' });
+result = result.chain({ message: 'hello' });
 
 // prints 'hello' to the console
-// result is true
+// result is {success:true}
 ```
 
 ### Stopping Chain
@@ -263,14 +271,13 @@ fn2 = function() { console.log('I won\'t run'); };
 
 array = [ fn1, fn2 ];
 
-chain = builder.chain(array);
-// passing functions as args also works
-// chain = builder.chain(fn1, fn2);
+result = builder.chain(array);
+// result is {success:true, chain:Function}
 
-result = chain({problem:true});
+result = result.chain({problem:true});
 
 // fn2 will never run.
-// result = false
+// result is {error:'received false', type:'chaining'}
 ```
 
 ### Use Context to Pass on a Value
@@ -283,13 +290,12 @@ fn2 = function() { if(this.give === 'high 5') return 'cheer'; };
 
 array = [ fn1, fn2 ];
 
-chain = builder.chain(array);
-// chain = builder.chain(fn1, fn2);  // passing functions as args also works
+result = builder.chain(array);
 
-result = chain();
+result = result.chain();
 
 // fn2 will, uh, *cheer*
-// result = true
+// result is {success:true}
 ```
 
 ### Throw Error
@@ -306,9 +312,8 @@ context = {};   // declare our own context to extract chainError later
 result = chain(context);
 
 // fn1 will throw an error
-// chain will catch it, record it into: context.chainError, and return false
-// result = false
-// context.chainError is the thrown Error object
+// chain will catch it, end the chain, and include it in the result
+// result is {error:'chain function threw error', type:'caught', Error:Error}
 ```
 
 ## MIT License

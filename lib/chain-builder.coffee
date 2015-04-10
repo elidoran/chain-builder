@@ -9,7 +9,7 @@ Had = require 'had'
 
 module.exports = builder =                   # export singleton object
 
-  _checkArray: (had, array) ->               # shared verification fn
+  _checkArray: (had, propName, array) ->     # shared verification fn
 
     if had.nullArg 'array', array            # check if array is null
       return had.results()                   # return null arg error
@@ -18,7 +18,9 @@ module.exports = builder =                   # export singleton object
       array = array[0]                       # unwrap array
 
     unless array?.length > 0                 # avoid work for empty array
-      return had.success fn:-> had.success() # noop fn returns success
+      success = {}                           # create object to put prop on
+      success[propName] = -> had.success()   # use specified name to hold noop
+      return had.success success             # noop fn returns success
 
     for fn,i in array                        # loop over array, fn and index
       if typeof fn isnt 'function'           # ensure it's a function
@@ -39,9 +41,10 @@ module.exports = builder =                   # export singleton object
 
     had = Had id:'chain'                     # create our own had, name it
 
-    result = builder._checkArray had, array  # verify array, clone it, shortcut
+    result =                                 # verify array, clone it, shortcut
+      builder._checkArray had, 'chain', array # needs name of prop to store fn
 
-    if result?.error? or result?.fn?         # error or shortcut(fn), return it
+    if result?.error? or result?.chain?      # error or shortcut(fn), return it
       return result                          # as is
 
     else                                     # else it's a success, ready for us
@@ -73,15 +76,16 @@ module.exports = builder =                   # export singleton object
 
       return had.success()                    # successful chain, return success
 
-    return had.success fn:fn                  # return success with generated fn
+    return had.success chain:fn               # return success with generated fn
 
   pipeline: (array...) ->                     # build pipeline over array
 
     had = Had id:'pipeline'                   # create our own had, name it
 
-    result = builder._checkArray had, array  # verify array, clone it, shortcut
+    result =                                 # verify array, clone it, shortcut
+      builder._checkArray had, 'pipeline', array # needs name of prop to store fn
 
-    if result?.error? or result?.fn?         # error or shortcut(fn), return it
+    if result?.error? or result?.pipeline?   # error or shortcut(fn), return it
       return result                          # as is
 
     else                                     # else it's a success, ready for us
@@ -125,4 +129,4 @@ module.exports = builder =                   # export singleton object
       else if result?.error? or result?.success? # had result instead of boolean
         return result                         # return it as is
 
-    return had.success fn:fn                  # return success with generated fn
+    return had.success pipeline:fn            # return success with generated fn

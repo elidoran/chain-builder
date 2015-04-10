@@ -291,17 +291,18 @@ describe 'test building chains/pipelines', ->
 
     describe 'test empty chain', ->
 
-      it 'should return an noop function', ->
+      it 'should return a noop function', ->
         result = builder.chain []
-        assertSuccess result, ['fn']
-        assert.equal noop.test(''+result.fn), true
+        console.log 'RESULT CHAIN=',result.chain
+        assertSuccess result, ['chain']
+        assert.equal noop.test(''+result.chain), true
 
     describe 'test empty pipeline', ->
 
-      it 'should return an noop function', ->
+      it 'should return a noop function', ->
         result = builder.pipeline []
-        assertSuccess result, ['fn']
-        assert.equal noop.test(''+result.fn), true
+        assertSuccess result, ['pipeline']
+        assert.equal noop.test(''+result.pipeline), true
 
     describe 'test single input to chain', ->
 
@@ -310,8 +311,8 @@ describe 'test building chains/pipelines', ->
           ran: false
         com = (context) -> ctx.ran = true
         result = builder.chain [com]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.ran, true
 
@@ -322,8 +323,8 @@ describe 'test building chains/pipelines', ->
           ran: false
         com = (next, context) -> ctx.ran = true ; next context
         result = builder.pipeline [com]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assertSuccess result
         assert.equal ctx.ran, true
 
@@ -335,8 +336,8 @@ describe 'test building chains/pipelines', ->
         ctx = ran:false
         com = (context) -> context.ran = true
         result = builder.chain com
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.ran, true
 
@@ -346,8 +347,8 @@ describe 'test building chains/pipelines', ->
         ctx = ran:false
         com = (next, context) -> context.ran = true ; next context
         result = builder.pipeline com
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assertSuccess result
         assert.equal ctx.ran, true
 
@@ -358,8 +359,8 @@ describe 'test building chains/pipelines', ->
         com1 = (context) -> context.ran1 = true
         com2 = (context) -> context.ran2 = true
         result = builder.chain com1, com2
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
@@ -371,8 +372,8 @@ describe 'test building chains/pipelines', ->
         com1 = (next, context) -> context.ran1 = true ; next context
         com2 = (next, context) -> context.ran2 = true ; next context
         result = builder.pipeline com1, com2
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
@@ -385,8 +386,8 @@ describe 'test building chains/pipelines', ->
         com2 = (context) -> context.ran2 = true
         com3 = (context) -> context.ran3 = true
         result = builder.chain com1, com2, com3
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
@@ -400,8 +401,8 @@ describe 'test building chains/pipelines', ->
         com2 = (next, context) -> context.ran2 = true ; next context
         com3 = (next, context) -> context.ran3 = true ; next context
         result = builder.pipeline com1, com2, com3
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
@@ -413,9 +414,9 @@ describe 'test building chains/pipelines', ->
       ctx = ran: false
       array = []
       result = builder.chain array
-      assertSuccess result
+      assertSuccess result, ['chain']
       array.push (context) -> context.ran = true
-      result = result.fn ctx
+      result = result.chain ctx
       assertSuccess result
       assert.equal ctx.ran, false
 
@@ -427,9 +428,9 @@ describe 'test building chains/pipelines', ->
       com2 = (context) -> context.ran2 = true
       array = [com1]
       result = builder.pipeline array
-      assertSuccess result
+      assertSuccess result, ['pipeline']
       array.push com2
-      result = result.fn ctx
+      result = result.pipeline ctx
       assertSuccess result
       assert.equal ctx.ran1, true
       assert.equal ctx.ran2, false
@@ -443,8 +444,8 @@ describe 'test building chains/pipelines', ->
       com1 = (context) -> context.ran = true ; return false
       com2 = (context) -> context.ran2 = true
       result = builder.chain [com1, com2]
-      assertSuccess result, ['fn']
-      result = result.fn ctx
+      assertSuccess result, ['chain']
+      result = result.chain ctx
       assert.equal ctx.ran, true, 'com1 should set `ran` to true'
       assert.equal ctx.ran2, false, 'com2 should NOT run, ran2 should be false'
       assertError result, [],
@@ -458,8 +459,8 @@ describe 'test building chains/pipelines', ->
       com1 = -> throw new Error 'test error'
       com2 = (context) -> context.com2 = true
       result = builder.chain [com1]
-      assertSuccess result, ['fn']
-      result = result.fn ctx
+      assertSuccess result, ['chain']
+      result = result.chain ctx
       assert.equal ctx.com2, false
       assertError result, [],
         error:'chain function threw error'
@@ -470,8 +471,8 @@ describe 'test building chains/pipelines', ->
       com1 = -> throw new Error 'test error'
       com2 = (next, context) -> context.com2 = true ; next context
       result = builder.pipeline [com1]
-      assertSuccess result, ['fn']
-      result = result.fn ctx
+      assertSuccess result, ['pipeline']
+      result = result.pipeline ctx
       assert.equal ctx.com2, false
       assertError result, [],
         error:'chain function threw error'
@@ -486,7 +487,8 @@ describe 'test building chains/pipelines', ->
         com1 = (context) -> context.add = 'added'
         com2 = (context) -> if context?.add? then context.seen = true
         result = builder.chain [com1, com2]
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assert.equal result?, true, 'result should exist'
         assert.equal ctx.add, 'added'
         assert.equal ctx.seen, true
@@ -498,8 +500,8 @@ describe 'test building chains/pipelines', ->
           if context?.add? then context.seen = true
           next context
         result = builder.pipeline [com1, com2]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assertSuccess result
         assert.equal ctx.seen, true
         assert.equal ctx.add, 'added'
@@ -512,8 +514,8 @@ describe 'test building chains/pipelines', ->
           test.ran = true
           if context? then test.context = true
         result = builder.chain [com1]
-        assertSuccess result, ['fn']
-        result = result.fn()
+        assertSuccess result, ['chain']
+        result = result.chain()
         assertSuccess result
         assert.equal test.ran, true
         assert.equal test.context, true
@@ -527,8 +529,8 @@ describe 'test building chains/pipelines', ->
           if context? then test.context = true
           next context
         result = builder.pipeline [com1]
-        assertSuccess result, ['fn']
-        result = result.fn()
+        assertSuccess result, ['pipeline']
+        result = result.pipeline()
         assertSuccess result
         assert.equal test.ran, true
         assert.equal test.context, true
@@ -541,8 +543,8 @@ describe 'test building chains/pipelines', ->
         ctx = found:false
         com1 = -> this.found = true
         result = builder.chain [ com1 ]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.found, true
 
@@ -550,8 +552,8 @@ describe 'test building chains/pipelines', ->
         ctx = found:false
         com1 = (next, context) -> this.found = true ; next context
         result = builder.pipeline [ com1 ]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assert.equal ctx.found, true
 
     describe 'test adding value to *this*', ->
@@ -561,8 +563,8 @@ describe 'test building chains/pipelines', ->
         com1 = () -> this.add = 'added'
         com2 = () -> if this?.add? then this.seen = true
         result = builder.chain [com1, com2]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assertSuccess result
         assert.equal ctx.add, 'added'
         assert.equal ctx.seen, true
@@ -574,8 +576,8 @@ describe 'test building chains/pipelines', ->
           if this?.add? then this.seen = true
           next context
         result = builder.pipeline [com1, com2]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assert.equal ctx.seen, true
         assert.equal ctx.add, 'added'
 
@@ -588,8 +590,8 @@ describe 'test building chains/pipelines', ->
           if context.changed then context.found = true
           next context
         result = builder.pipeline [ com1, com2 ]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assert.equal ctx.found, true
 
   describe 'test optional *this* on function', ->
@@ -605,8 +607,8 @@ describe 'test building chains/pipelines', ->
           sharedContext.available = true
         com1.options = options
         result = builder.chain [ com1 ]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['chain']
+        result = result.chain ctx
         assert.equal ctx.available, true
         assert.equal thiss.accessed, true
 
@@ -622,7 +624,7 @@ describe 'test building chains/pipelines', ->
           next sharedContext
         com1.options = options
         result = builder.pipeline [ com1 ]
-        assertSuccess result, ['fn']
-        result = result.fn ctx
+        assertSuccess result, ['pipeline']
+        result = result.pipeline ctx
         assert.equal ctx.available, true, 'ctx.available should be true'
         assert.equal thiss.accessed, true, 'thiss.accessed should be true'
