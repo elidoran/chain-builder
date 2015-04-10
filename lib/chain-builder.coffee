@@ -1,5 +1,5 @@
 
-had = require 'had'
+Had = require 'had'
 
 # TODO:
 #  1. `had` support reporting status from within fn's? control ones and theirs
@@ -7,83 +7,122 @@ had = require 'had'
 #     stop (when it next checks the value...)
 
 
-module.exports = builder =                    # export singleton object
+module.exports = builder =                   # export singleton object
 
-  chain: (array...) ->                        # build chain over array
+  _checkArray: (had, array) ->               # shared verification fn
 
-    unless array?                             # null/undefined ?
-      # TODO: use had to respond with error   # use `had` instead
-      throw new Error 'null array param'      # throw error,
+    if had.nullArg 'array', array            # check if array is null
+      return had.results()                   # return null arg error
 
-    if array?[0]?.push?                       # splat causes wrapped array
-      array = array[0]                        # unwrap array
+    if array?[0]?.push?                      # splat causes wrapped array
+      array = array[0]                       # unwrap array
 
-    if array?.length > 0                      # avoid work for empty array
+    unless array?.length > 0                 # avoid work for empty array
+      return had.success fn:-> had.success() # noop fn returns success
 
-      array = array[..]                       # clone array
+    for fn,i in array                        # loop over array, fn and index
+      if typeof fn isnt 'function'           # ensure it's a function
+        return had.error                     # add error properties
+          error : 'not a function'           # required, is a message
+          type  : 'typeof'                   # type the error for your handling
+          name  : 'fn'                       # name of offending thing
+          on    : fn                         # what object was the error on
+          in    : array                      # what object was that in
+          index : i                          # for array, what is its index
+          during: 'array content validation' # what were we trying to do?
 
-      do (array) ->                             # check array contents
-        for fn,i in array # TODO: use `had`     # loop over array, fn and index
-          if typeof fn isnt 'function'          # ensure it's a function
-            err = "[#{i}] not a function: #{fn}"# include index and value
-            throw new Error err                 # throw it (TODO: use `had`)
+    array = array[..]                        # clone array
 
-      return (context={}) ->                  # return new function, the chain
-        for fn in array                       # loop over provided functions
-          okay = do (fn) ->                   # run in own scope, hold return result
-            itsThis = fn?.options?.this ? context
-            try                               # grab errors in chain calls
-              return fn.call itsThis, context # calls function with context=itsThis
-            catch e
-              console.log 'chain: error', e   # report to console. TODO: remove?
-              context.chainError = e          # store error in context
-              return false                    # end chain with false return
+    return had.success array:array           # return success with array
 
-          if not okay then return false       # stop chain loop when false
+  chain: (array...) ->                       # build chain over array
 
-        return true                           # successful chain, return true
+    had = Had id:'chain'                     # create our own had, name it
 
-    else # TODO: warning? had'd warn          # empty array
-      return -> true                          # noop fn returns true
+    result = builder._checkArray had, array  # verify array, clone it, shortcut
 
+    if result?.error? or result?.fn?         # error or shortcut(fn), return it
+      return result                          # as is
+
+    else                                     # else it's a success, ready for us
+      array = result.array                   # get the array (cloned)
+
+    fn = (context={}) ->                      # return new function, the chain
+      for fn,i in array                       # loop over provided functions
+        result = do (fn) ->                   # run in own scope, hold return result
+          itsThis = fn?.options?.this ? context # choose the *this* context
+          try                                 # grab errors in chain calls
+            return fn.call itsThis, context   # calls function with context=itsThis
+          catch e
+            return had.error                  # add error properties
+              error: 'chain function threw error' # required, is a message
+              type : 'caught'                 # type the error for your handling
+              name : 'fn'                     # name of offending thing
+              on   : fn                       # what object was the error on
+              in   : array                    # what object was that in
+              index: i                        # for array, what is its index
+              Error:e                         # store Error in error info
+
+        # the chained function might return a 'had' error/result
+        # so, use that if so.
+        unless had.isSuccess result           # test for success/error
+          if result?.error? then return result# return had error as is
+          else return had.error               # create an error to return
+            error:'received false'            # tell we received a false
+            type: 'chaining'                  # what's going on
+
+      return had.success()                    # successful chain, return success
+
+    return had.success fn:fn                  # return success with generated fn
 
   pipeline: (array...) ->                     # build pipeline over array
 
-    unless array?                             # null/undefined ?
-      # TODO: use had to respond with error   # use `had` instead
-      throw new Error 'null array param'      # throw error,
+    had = Had id:'pipeline'                   # create our own had, name it
 
-    if array?[0]?.push?                       # splat causes wrapped array
-      array = array[0]                        # unwrap array
+    result = builder._checkArray had, array  # verify array, clone it, shortcut
 
-    unless array?.length > 0                  # avoid work for empty array
-      # TODO: warning. had'd warn
-      return -> return true                   # noop fn returns true
+    if result?.error? or result?.fn?         # error or shortcut(fn), return it
+      return result                          # as is
 
-    array = array[..]                         # clone array
+    else                                     # else it's a success, ready for us
+      array = result.array                   # get the array (cloned)
 
-    do (array) ->                             # check array contents
-      for fn,i in array # TODO: use `had`     # loop over array, fn and index
-        if typeof fn isnt 'function'          # ensure it's a function
-          err = "[#{i}] not a function: #{fn}"# include index and value
-          throw new Error err                 # throw it (TODO: use `had`)
-
-    return (ctx={}) ->                        # return new function, pipeline
+    fn = (ctx={}) ->                          # return new function, pipeline
       i = 0                                   # start with first fn in array
       caller = (next, context) ->             # new fn calls their fn
-        fn = array[i]                         # get next function
-        itsThis = fn?.options?.this ? context
+        fn = array[i]                         # get next function to call
+        itsThis = fn?.options?.this ? context # choose the *this* context
         try                                   # catch errors from call
           return fn.call itsThis, next, context # call: context=itsThis
         catch e
-          console.log 'pipeline: error', e    # report to console. TODO: remove?
-          context.chainError = e              # store error in context
-          return false                        # end chain with false return
+          return had.error                  # add error properties
+            error: 'chain function threw error' # required, is a message
+            type : 'caught'                 # type the error for your handling
+            name : 'fn'                     # name of offending thing
+            on   : fn                       # what object was the error on
+            in   : array                    # what object was that in
+            index: i                        # for array, what is its index
+            Error:e
 
       repeater = (context=ctx) ->             # the 'next' function
         i++                                   # advance 'i'
         if i < array.length                   # check there is another fn
-          caller repeater, context            # call it with context+next
-        else true                             # successful pipeline, return true
+          return caller repeater, context     # call it with context+next
+        else
+          return true                         # successful pipeline, return true
 
-      return caller repeater, ctx             # initiate pipeline, return result
+      result = caller repeater, ctx           # initiate pipeline, return result
+
+      # TODO: had should help with this mess :)
+      if result is true                       # just true (common result)
+        return had.success()                  # return basic success result
+
+      else if result is false                 # just false (common stopper)
+        return had.error                      # return an error result
+          error:'received false'              # tell we received a false
+          type:'chaining'                     # what's going on
+
+      else if result?.error? or result?.success? # had result instead of boolean
+        return result                         # return it as is
+
+    return had.success fn:fn                  # return success with generated fn

@@ -1,6 +1,28 @@
 assert = require 'assert'
 builder = require '../index'
 
+noop = /function\s?\(\)\s?{\n\s*return had\.success\(\);\n\s*}/
+
+# TODO: these helpers should probably be provided by `had`
+assertSuccess = (result, exists, equals) ->
+  assert.equal result?.success?, true, 'result.success should exist'
+  assert.equal result.success, true, 'result.success should equal true'
+  assertValues result, exists, equals
+
+assertValues = (result, exists, equals) ->
+  if exists?
+    for key in exists
+      assert.equal result?[key]?, true, "#{key} should exist"
+
+  if equals?
+    for own key,value of equals
+      assert.equal result?[key], value, "#{key} should equal #{value}"
+
+assertError = (result, exists, equals) ->
+  assert.equal result?.error?, true, 'result.error should exist'
+  assert.equal result?.type?, true, 'result.type should exist'
+  assertValues result, exists, equals
+
 describe 'test building chains/pipelines', ->
   #before ->
   #beforeEach '', ->
@@ -9,140 +31,301 @@ describe 'test building chains/pipelines', ->
 
     describe 'test null to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain null
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: null
+          in: [null]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain null
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test null to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline null
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: null
+          in: [null]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline null
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test undefined to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain undefined
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: undefined
+          in: [undefined]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain undefined
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test undefined to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline undefined
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: undefined
+          in: [undefined]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline undefined
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test undefined in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain [undefined]
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: undefined
+          in: [undefined]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain [undefined]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test undefined in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline [undefined]
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: undefined
+          in: [undefined]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline [undefined]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test null in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain [null]
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: null
+          in: [null]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain [null]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test null in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline [null]
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: null
+          in: [null]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline [null]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test Object in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain [{}]
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: {}
+          in: [{}]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain [{}]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test Object in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline [{}]
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: {}
+          in: [{}]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline [{}]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test string in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain ['string']
+      it 'should return error', ->
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: 'string'
+          in: ['string']
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain ['string']
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test string in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline ['string']
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: 'string'
+          in: ['string']
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline ['string']
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test number in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain [-1]
+      it 'should return error', -> # -1
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: -1
+          in: [-1]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain [-1]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test number in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline [-1]
+      it 'should return error', ->
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: -1
+          in: [-1]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline [-1]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test Date in array to chain', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.chain [new Date()]
+      it 'should return error', -> # new Date
+        date = new Date()
+        expected =
+          had: 'chain'
+          error: 'not a function'
+          type: 'typeof'
+          on: date
+          in: [date]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.chain [date]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
     describe 'test Date in array to pipeline', ->
 
-      it 'should throw error', -> # TODO: use `had` instead
-        assert.throws ->
-          builder.pipeline [new Date()]
-
-    # TODO: check error message above to ensure index is 0 and value is reported
-    # TODO: make more of those which have the invalid value later in the array
+      it 'should return error', ->
+        date = new Date()
+        expected =
+          had: 'pipeline'
+          error: 'not a function'
+          type: 'typeof'
+          on: date
+          in: [date]
+          name:'fn'
+          index:0
+          during: 'array content validation'
+        result = builder.pipeline [date]
+        assert.equal result?, true, 'result should exist'
+        assert.deepEqual result, expected
 
   describe 'test successful runs', ->
 
     describe 'test empty chain', ->
 
       it 'should return an noop function', ->
-        fn = builder.chain []
-        noop = /function\s?\(\)\s?{\n\s*return true;\n\s*}/
-        assert.equal noop.test(''+fn), true
+        result = builder.chain []
+        assertSuccess result, ['fn']
+        assert.equal noop.test(''+result.fn), true
 
     describe 'test empty pipeline', ->
 
       it 'should return an noop function', ->
-        fn = builder.pipeline []
-        noop = /function\s?\(\)\s?{\n\s*return true;\n\s*}/
-        assert.equal noop.test(''+fn), true
+        result = builder.pipeline []
+        assertSuccess result, ['fn']
+        assert.equal noop.test(''+result.fn), true
 
     describe 'test single input to chain', ->
 
       it 'should give a chain for the single function', ->
         ctx =
           ran: false
-        com = (context) -> context.ran = true
-        fn = builder.chain [com]
-        result = fn ctx
+        com = (context) -> ctx.ran = true
+        result = builder.chain [com]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran, true
-        assert.equal result, true
 
     describe 'test single input to pipeline', ->
 
       it 'should give a pipeline for the single function', ->
         ctx =
           ran: false
-        com = (next, context) -> context.ran = true ; next context
-        fn = builder.pipeline [com]
-        result = fn ctx
+        com = (next, context) -> ctx.ran = true ; next context
+        result = builder.pipeline [com]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran, true
-        assert.equal result, true
 
   describe 'test providing functions instead of array', ->
 
@@ -151,20 +334,22 @@ describe 'test building chains/pipelines', ->
       it 'should give a chain for the one function', ->
         ctx = ran:false
         com = (context) -> context.ran = true
-        fn = builder.chain com
-        result = fn ctx
+        result = builder.chain com
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran, true
-        assert.equal result, true
 
     describe 'test one function to pipeline', ->
 
       it 'should give a pipeline for the one function', ->
         ctx = ran:false
         com = (next, context) -> context.ran = true ; next context
-        fn = builder.pipeline com
-        result = fn ctx
+        result = builder.pipeline com
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran, true
-        assert.equal result, true
 
     describe 'test two functions to chain', ->
 
@@ -172,11 +357,12 @@ describe 'test building chains/pipelines', ->
         ctx = ran1: false, ran2: false
         com1 = (context) -> context.ran1 = true
         com2 = (context) -> context.ran2 = true
-        fn = builder.chain com1, com2
-        result = fn ctx
+        result = builder.chain com1, com2
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
-        assert.equal result, true
 
     describe 'test two functions to pipeline', ->
 
@@ -184,11 +370,12 @@ describe 'test building chains/pipelines', ->
         ctx = ran1: false, ran2: false
         com1 = (next, context) -> context.ran1 = true ; next context
         com2 = (next, context) -> context.ran2 = true ; next context
-        fn = builder.pipeline com1, com2
-        result = fn ctx
+        result = builder.pipeline com1, com2
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
-        assert.equal result, true
 
     describe 'test three functions to chain', ->
 
@@ -197,12 +384,13 @@ describe 'test building chains/pipelines', ->
         com1 = (context) -> context.ran1 = true
         com2 = (context) -> context.ran2 = true
         com3 = (context) -> context.ran3 = true
-        fn = builder.chain com1, com2, com3
-        result = fn ctx
+        result = builder.chain com1, com2, com3
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
         assert.equal ctx.ran3, true
-        assert.equal result, true
 
     describe 'test three functions to pipeline', ->
 
@@ -211,24 +399,25 @@ describe 'test building chains/pipelines', ->
         com1 = (next, context) -> context.ran1 = true ; next context
         com2 = (next, context) -> context.ran2 = true ; next context
         com3 = (next, context) -> context.ran3 = true ; next context
-        fn = builder.pipeline com1, com2, com3
-        result = fn ctx
+        result = builder.pipeline com1, com2, com3
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.ran1, true
         assert.equal ctx.ran2, true
         assert.equal ctx.ran3, true
-        assert.equal result, true
-        assert.equal result, true
 
   describe 'test array is cloned in chain', ->
 
     it 'should be unaffected by altering array after build', ->
       ctx = ran: false
       array = []
-      fn = builder.chain array
+      result = builder.chain array
+      assertSuccess result
       array.push (context) -> context.ran = true
-      result = fn ctx
+      result = result.fn ctx
+      assertSuccess result
       assert.equal ctx.ran, false
-      assert.equal result, true
 
   describe 'test array is cloned in pipeline', ->
 
@@ -237,12 +426,13 @@ describe 'test building chains/pipelines', ->
       com1 = (next, context) -> context.ran1 = true ; next context
       com2 = (context) -> context.ran2 = true
       array = [com1]
-      fn = builder.pipeline array
+      result = builder.pipeline array
+      assertSuccess result
       array.push com2
-      result = fn ctx
+      result = result.fn ctx
+      assertSuccess result
       assert.equal ctx.ran1, true
       assert.equal ctx.ran2, false
-      assert.equal result, true
 
   describe 'test stopping chain with false return', ->
 
@@ -252,23 +442,40 @@ describe 'test building chains/pipelines', ->
         ran2: false
       com1 = (context) -> context.ran = true ; return false
       com2 = (context) -> context.ran2 = true
-      fn = builder.chain [com1, com2]
-      result = fn ctx
+      result = builder.chain [com1, com2]
+      assertSuccess result, ['fn']
+      result = result.fn ctx
       assert.equal ctx.ran, true, 'com1 should set `ran` to true'
       assert.equal ctx.ran2, false, 'com2 should NOT run, ran2 should be false'
-      assert.equal result, false, 'chain result should be false'
+      assertError result, [],
+        error:'received false'
+        type:'chaining'
 
   describe 'test try-catch by throwing an error', ->
 
-    it 'error should stop chain and be in context', ->
+    it 'error should stop chain and be in result', ->
       ctx = com2: false
       com1 = -> throw new Error 'test error'
       com2 = (context) -> context.com2 = true
-      fn = builder.chain [com1]
-      result = fn ctx
-      assert.equal result, false
-      assert.equal ctx.chainError?, true
+      result = builder.chain [com1]
+      assertSuccess result, ['fn']
+      result = result.fn ctx
       assert.equal ctx.com2, false
+      assertError result, [],
+        error:'chain function threw error'
+        type:'caught'
+
+    it 'error should stop pipeline and be in result', ->
+      ctx = com2: false
+      com1 = -> throw new Error 'test error'
+      com2 = (next, context) -> context.com2 = true ; next context
+      result = builder.pipeline [com1]
+      assertSuccess result, ['fn']
+      result = result.fn ctx
+      assert.equal ctx.com2, false
+      assertError result, [],
+        error:'chain function threw error'
+        type:'caught'
 
   describe 'test context', ->
 
@@ -278,9 +485,9 @@ describe 'test building chains/pipelines', ->
         ctx = {}
         com1 = (context) -> context.add = 'added'
         com2 = (context) -> if context?.add? then context.seen = true
-        fn = builder.chain [com1, com2]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.chain [com1, com2]
+        result = result.fn ctx
+        assert.equal result?, true, 'result should exist'
         assert.equal ctx.add, 'added'
         assert.equal ctx.seen, true
 
@@ -290,8 +497,10 @@ describe 'test building chains/pipelines', ->
         com2 = (next, context) ->
           if context?.add? then context.seen = true
           next context
-        fn = builder.pipeline [com1, com2]
-        result = fn ctx
+        result = builder.pipeline [com1, com2]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.seen, true
         assert.equal ctx.add, 'added'
 
@@ -302,9 +511,10 @@ describe 'test building chains/pipelines', ->
         com1 = (context) ->
           test.ran = true
           if context? then test.context = true
-        fn = builder.chain [com1]
-        result = fn()
-        assert.equal result, true, 'result should be true'
+        result = builder.chain [com1]
+        assertSuccess result, ['fn']
+        result = result.fn()
+        assertSuccess result
         assert.equal test.ran, true
         assert.equal test.context, true
 
@@ -316,9 +526,10 @@ describe 'test building chains/pipelines', ->
           test.ran = true
           if context? then test.context = true
           next context
-        fn = builder.pipeline [com1]
-        result = fn()
-        assert.equal result, true, 'result should be true'
+        result = builder.pipeline [com1]
+        assertSuccess result, ['fn']
+        result = result.fn()
+        assertSuccess result
         assert.equal test.ran, true
         assert.equal test.context, true
 
@@ -329,17 +540,18 @@ describe 'test building chains/pipelines', ->
       it 'should be available from this in chain', ->
         ctx = found:false
         com1 = -> this.found = true
-        fn = builder.chain [ com1 ]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.chain [ com1 ]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.found, true
 
       it 'should be available from this in pipeline', ->
         ctx = found:false
         com1 = (next, context) -> this.found = true ; next context
-        fn = builder.pipeline [ com1 ]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.pipeline [ com1 ]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
         assert.equal ctx.found, true
 
     describe 'test adding value to *this*', ->
@@ -348,9 +560,10 @@ describe 'test building chains/pipelines', ->
         ctx = {}
         com1 = () -> this.add = 'added'
         com2 = () -> if this?.add? then this.seen = true
-        fn = builder.chain [com1, com2]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.chain [com1, com2]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
+        assertSuccess result
         assert.equal ctx.add, 'added'
         assert.equal ctx.seen, true
 
@@ -360,8 +573,9 @@ describe 'test building chains/pipelines', ->
         com2 = (next, context) ->
           if this?.add? then this.seen = true
           next context
-        fn = builder.pipeline [com1, com2]
-        result = fn ctx
+        result = builder.pipeline [com1, com2]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
         assert.equal ctx.seen, true
         assert.equal ctx.add, 'added'
 
@@ -373,9 +587,9 @@ describe 'test building chains/pipelines', ->
         com2 = (next, context) ->
           if context.changed then context.found = true
           next context
-        fn = builder.pipeline [ com1, com2 ]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.pipeline [ com1, com2 ]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
         assert.equal ctx.found, true
 
   describe 'test optional *this* on function', ->
@@ -390,9 +604,9 @@ describe 'test building chains/pipelines', ->
           this.accessed = true
           sharedContext.available = true
         com1.options = options
-        fn = builder.chain [ com1 ]
-        result = fn ctx
-        assert.equal result, true
+        result = builder.chain [ com1 ]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
         assert.equal ctx.available, true
         assert.equal thiss.accessed, true
 
@@ -407,8 +621,8 @@ describe 'test building chains/pipelines', ->
           sharedContext.available = true
           next sharedContext
         com1.options = options
-        fn = builder.pipeline [ com1 ]
-        result = fn ctx
+        result = builder.pipeline [ com1 ]
+        assertSuccess result, ['fn']
+        result = result.fn ctx
         assert.equal ctx.available, true, 'ctx.available should be true'
         assert.equal thiss.accessed, true, 'thiss.accessed should be true'
-        assert.equal result, true
