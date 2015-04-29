@@ -1,6 +1,6 @@
 {
   "name": "chain-builder",
-  "version": "0.4.1",
+  "version": "0.6.0",
   "description": "Build chain of command function from an array of functions",
   "main": "index.js",
   "author": "Eli Doran <eli@elidoran.com>",
@@ -20,5 +20,8 @@
   "devDependencies": {
     "coffee-script": "^1.9.1",
     "mocha": "^2.2.1"
+  },
+  "dependencies": {
+    "had": "^0.4.3"
   }
 }
