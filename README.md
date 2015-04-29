@@ -22,7 +22,7 @@ result = result.chain message:'hello'
 # prints 'hello'
 # result is {success:true}
 
-# CoffeeScript destructing : ignore result and use chain
+# CoffeeScript destructuring : ignore result and use chain
 {chain} = builder.chain -> console.log this.message
 chain message:'hello'
 ```
