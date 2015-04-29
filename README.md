@@ -18,9 +18,10 @@ May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pi
 ```coffeescript
 builder = require 'chain-builder'
 result = builder.chain -> console.log this.message
+# result is {success:true, chain:Function, had:'chain'}
 result = result.chain message:'hello'
 # prints 'hello'
-# result is {success:true}
+# result is {success:true, had:'chain'}
 
 # CoffeeScript destructuring : ignore result and use chain
 {chain} = builder.chain -> console.log this.message
