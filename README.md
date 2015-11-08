@@ -3,22 +3,29 @@
 [![Dependency Status](https://gemnasium.com/elidoran/chain-builder.png)](https://gemnasium.com/elidoran/chain-builder)
 [![npm version](https://badge.fury.io/js/chain-builder.svg)](http://badge.fury.io/js/chain-builder)
 
-Builds a **synchronous** "chain of command" function from an array of functions.
+Builds an array of functions into a synchronous "chain of command" or asynchronous capable filter/pipeline.
 
 May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pipeline](#usage-pipeline)
 
 
 ## Install
 
-    npm install chain-builder
+    npm install chain-builder --save
+
 
 ## Usage: Simple
 [More Usage](#usage-chain)
 
 ```coffeescript
 builder = require 'chain-builder'
-result = builder.chain -> console.log this.message
-# result is {success:true, chain:Function, had:'chain'}
+
+result = builder.chain -> console.log this.message  # build single fn chain
+result = # {chain:Function, success:true, had:'chain'}
+
+# context object given to each fn in the chain
+context = message:'hello'
+
+# call chain providing context object to each fn in chain
 result = result.chain message:'hello'
 # prints 'hello'
 # result is {success:true, had:'chain'}
@@ -190,6 +197,13 @@ result.chain shared:'object'
 #   sharedContext is a shared object
 ```
 
+### Why not use `bind()` ?
+
+When using `bind()` it wraps the function with another function which calls it with the `this` context specified. That means to call the function it's now two function calls.
+
+When specifying the `this` via an option it is used in the `fn.call()` as an argument. It doesn't make more work.
+
+
 ### For a Pipeline too?
 
 Yes. With pipelines it is more important to be mindful because we
@@ -233,6 +247,12 @@ set which will be applied as `this` instead of the object you provide to your
 
 ## Usage: Pipeline
 
+TODO: fill in pipeline specific info.
+
+
+## Usage: Asynchronous
+
+The pipeline provides a *next* callback so it can be used for asynchronous operations.
 
 # JavaScript Style Usage
 
