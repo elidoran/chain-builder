@@ -1,5 +1,5 @@
 assert = require 'assert'
-builder = require '../index'
+buildChain = require '../index'
 
 noop = /function\s?\(\)\s?{\n\s*return had\.success\(\);\n\s*}/
 
@@ -24,8 +24,6 @@ assertError = (result, exists, equals) ->
   assertValues result, exists, equals
 
 describe 'test building chains/pipelines', ->
-  #before ->
-  #beforeEach '', ->
 
   describe 'test passing bad values to chain/pipeline', ->
 
