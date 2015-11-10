@@ -18,10 +18,8 @@
   },
   "bugs": "http://github.com/elidoran/chain-builder/issues",
   "devDependencies": {
-    "coffee-script": "^1.9.3",
-    "mocha": "^2.2.5"
+    "coffee-script": "^1.10.0",
+    "mocha": "^2.3.3"
   },
-  "dependencies": {
-    "had": "^0.6.1"
-  }
+  "dependencies": {}
 }
