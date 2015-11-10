@@ -49,7 +49,7 @@ class Control
   stop: (reason) ->
     @stopped = reason:reason, index:@_index, fn:@_array[@_index]
     result = context:@context
-    @_chain.emit 'stop', undefined, result
+    @_chain.emit 'stop', result
     return true
 
   fail: (reason) ->
@@ -76,6 +76,7 @@ class Chain extends require('events').EventEmitter
     context = options?.context ? {}                # get context or default to {}
     done = options?.done ? done                    # look for `done`
     control = new Control @, @array, context, done # create controller
+    @emit 'start', control:control
     result = control._execute()                    # starts the chain
     if control.paused?                             # a paused chain isn't done
       results = paused:control.paused              # return only paused info
@@ -88,6 +89,7 @@ class Chain extends require('events').EventEmitter
     results.stopped = control.stopped if control.stopped?
     results.failed  = control.failed  if control.failed?
     control._done? result.error, results
+    @emit 'done', result.error, results
     return results
 
 
