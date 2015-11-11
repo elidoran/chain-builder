@@ -258,13 +258,15 @@ chain.run()
 # for fn1, it is equivalent to this:
 # the chain will call the bound function like this:
 fn1Bound.call context, control, context
-# when called, the bound function will use apply to call the original
-# function with the fn1This
-fn1Bound = -> fn1Original.apply fn1This, Array.prototype.slice.call arguments
-# so, the first call specifies a *this* which will be overridden by the bound function.
+# when called, the bound function will use apply to call
+# the original function with the fn1This
+fn1Bound = ->
+  fn1Original.apply fn1This, Array.prototype.slice.call arguments
+# so, the first call specifies a *this* which will be overridden
+# by the bound function.
 
-# for fn2, it is simpler because it passes the special this to the first
-# *call*. So, no second call. No need for bind().
+# for fn2, it is simpler because it passes the special this to the
+# first *call*. So, no second call. No need for bind().
 fn2.call fn2.options.this, control, context
 ```
 
