@@ -11,6 +11,9 @@ class Control
     results = @_chain._finish result, this
     return results
 
+  # more readable for pipeline style to call next() and then do more work after it
+  next: -> @_execute()
+
   context: (context, permanent) ->
     if permanent then @_context = context
     @_execute context
