@@ -420,17 +420,21 @@ fn1 = -> console.log this.message1
 
 fn2 = (control, context) ->
   console.log this.message2
-  resume = control.pause()  # returns a function to call to resume execution
+  resume = control.pause 'just because'  # returns a function to call to resume execution
   setTimeout resume, 1000 # schedule resume in a second
   return # return nothing
 
 fn3 = () -> console.log this.message3
 
 chain = buildChain array:[fn1, fn2, fn3]
-result = chain.run
+result = chain.run context:
   message1: 'in fn1'
   message2: 'in fn2 and pausing'
   message3: 'resumed and in fn3'
+
+result = # { returned when chain is paused
+#   paused: { reason: 'just because', index:1, fn:fn2 }
+# }
 
 # this will be printed before the chain is resumed and fn3 is run
 console.log 'back from chain.run()'
@@ -442,9 +446,11 @@ console.log 'back from chain.run()'
 #   resumed and in fn3
 ```
 
-If your code calls the `resume` function then it will receive the final result returned by `resume`.
+If your code calls the `resume` function then it will receive the final result usually returned by `chain.run()`.
 
 Using `setTimeout()` and other similar functions will make extra work to get that. So, you may specify a `done` callback to `chain.run()` to receive the final results, or the error, when a chain run completes.
+
+Here's an example:
 
 ```coffeescript
 buildChain = require 'chain-builder'
@@ -453,7 +459,7 @@ fn1 = -> console.log this.message1
 
 fn2 = (control, context) ->
   console.log this.message2
-  resume = control.pause()  # returns a function to call to resume execution
+  resume = control.pause 'just because'  # returns a function to call to resume execution
   setTimeout resume, 1000 # schedule resume in a second
   return # return nothing
 
@@ -463,9 +469,18 @@ chain = buildChain array:[fn1, fn2, fn3]
 
 # specify a done callback as part of the options object which will be run when
 # the chain run is finished
-result = chain.run done:(error, results) ->
+context =
+  message1: 'in fn1'
+  message2: 'in fn2 and pausing'
+  message3: 'resumed and in fn3'
+
+result = chain.run context:context, done:(error, results) ->
   # the results object is the same as what chain.run() returns when synchronous
   console.log 'in done'
+
+result = # { returned when chain is paused
+#   paused: { reason: 'just because', index:1, fn:fn2 }
+# }
 
 # this will be printed before the chain is resumed and fn3 is run, and,
 # before the done callback is called, of course
