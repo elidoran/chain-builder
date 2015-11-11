@@ -504,6 +504,17 @@ May also provide an array as an argument.
 
 ### API: control.fail(reason:String)
 
+### API: Events
+
+The chain emits these events:
+
+1. start: when a chain execution starts
+2. pause: when `control.pause()` is called
+3. resume: when the `resume` function, returned from `control.pause()`, is called
+4. stop: when `control.stop()` is called
+5. fail: when `control.fail()` is called
+4. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
+
 
 # JavaScript Style Usage
 
