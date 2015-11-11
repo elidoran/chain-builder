@@ -3,10 +3,21 @@
 [![Dependency Status](https://gemnasium.com/elidoran/chain-builder.png)](https://gemnasium.com/elidoran/chain-builder)
 [![npm version](https://badge.fury.io/js/chain-builder.svg)](http://badge.fury.io/js/chain-builder)
 
-Builds an array of functions into a synchronous "chain of command" or asynchronous capable filter/pipeline.
+Manage an array of functions and execute them in a series with a variety of flows.
 
-May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pipeline](#usage-pipeline)
+Some of the features:
 
+1. "chain of command" - call functions in series
+2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`)
+3. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
+4. accepts a `done` callback to send error or result to
+5. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
+6. can *stop* the chain early as a success; accepts a `reason`
+7. can *fail* the chain execution as an error; accepts a `reason`
+8. the context provided to each function is also the *this*, unless overridden via an option
+9. the *this* can be overridden per function via an options object on the function
+10. can override the context used by the next function (which can choose to pass that one on, or, allow the default context to be restored), and, can override the default context used by all future functions and returns in the result.
+11. is an *EventEmitter* with events for: start, pause, resume, stop, fail, done.
 
 ## Install
 
@@ -17,23 +28,42 @@ May [choose](#chain-or-pipeline-) from two styles: [chain](#usage-chain) and [pi
 [More Usage](#usage-chain)
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
-result = builder.chain -> console.log this.message  # build single fn chain
-result = # {chain:Function, success:true, had:'chain'}
+# for simple chains there's no need to use either function params, just *this*
+fn1 = -> this.message += ' there'  # message = 'hello there'
+fn2 = -> this.message += ', Bob'   # message = 'hello there, Bob'
+fn3 = -> console.log this.message  # writes full message to console
 
-# context object given to each fn in the chain
+chain = buildChain()
+chain.add fn1, fn2, fn3
+# could already be in an array like:
+# chain.add [fn1, fn2, fn3]
+
+# a mutable context object given to each fn in the chain
 context = message:'hello'
 
-# call chain providing context object to each fn in chain
-result = result.chain message:'hello'
-# prints 'hello'
-# result is {success:true, had:'chain'}
+result = chain.run context
+# prints 'hello there, Bob'
+# result has information depending on what occurred, this simple one is: {
+#   result:true
+#   context: { message:'hello there, Bob' }
+# }
 
-# CoffeeScript destructuring : ignore result and use chain
-{chain} = builder.chain -> console.log this.message
-chain message:'hello'
 ```
+
+## Execution Control
+
+By default, each function will be called in sequence with the parameters `(control, context)`, and the `this` will be the `context` object.
+
+This supports a basic 'chain of command' with functions having no params using the `this` to access the context.
+
+The `control` parameter allows changing the execution flow.
+
+1. `control.pause()` - returns a `resume` function allowing an asynchronous execution. The chain won't continue until resume is called.
+2. `control.context(context:Object[, permanent:Boolean])` - overrides the context used for the next function call. If `permanent` is true, then the specified `context` object becomes the new default context and is provided as a result of the chain's execution, replacing the original context, permanently.
+3. `control.stop(reason)` - stops executing functions and completes as a successful chain run. The stopped info will be included in the results.
+4. `control.fail(reason)` -
 
 
 ## Chain or Pipeline ?
@@ -69,9 +99,8 @@ Use `pipeline` if it's important to:
 
 1. passing a single function, without an array, will be treated as an array with a single function
 2. passing multiple function arguments (not an array) will be treated as an array of those functions
-3. a provided array will be cloned (shallow) so later changes to array do not affect the chain (rebuild chain if you need to)
-4. array will be validated during the *build* for non-function elements (fail fast)
-5. ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+3. the array can be changed which will affect any currently running chain executions (async)
+4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
 
 ## Usage: Chain
 
@@ -80,56 +109,82 @@ Use `pipeline` if it's important to:
 ### Simple
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
 fn1 = (context) -> console.log context.message
 # context = this  # so, the below is equivalent
 #fn1 = -> console.log this.message
 
+chain = buildChain()
 array = [ fn1 ]
+chain.add array     # passing function itself also works
 
-result = builder.chain array     # passing function itself also works
-# result is {success:true, chain:Function}
-
-result = result.chain message:'hello'
-
+result = chain message:'hello'
 # prints 'hello' to the console
-# result is {success:true}
-
+# result is {result:true, context:{message:'hello'}}
 ```
 
 ### Stopping Chain
 
-```coffeescript
-builder = require 'chain-builder'
+You may stop a chain's execution in two ways:
 
-fn1 = -> if this.problem then return false
+1. `control.stop()` - means a successful conclusion was reached
+2. `control.fail()` - means a failure prevents the chain from continuing
+
+Here's an example of using `control.stop()`:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = (control) -> if this.done then control.stop 'we are done'
 fn2 = -> console.log 'I won\'t run'
 
 array = [ fn1, fn2 ]
 
-result = builder.chain array    # passing functions as args also works
-# result is {success:true, chain:Function}
+chain = buildChain()
 
-result = result.chain problem:true
+result = chain.run problem:true
 # fn2 will never run.
-# result is {error:'received false', type:'chaining'}
+# result is: {
+#   result: true
+#   stopped:{ reason:'we are done', index:0, fn:fn1}
+# }
+```
+
+Here's an example of using `control.fail()`:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = (control) -> if this.problem then control.fail 'there is a problem'
+fn2 = -> console.log 'I won\'t run'
+
+array = [ fn1, fn2 ]
+
+chain = buildChain()
+
+result = chain.run problem:true
+# fn2 will never run.
+# result is: {
+#   result: false
+#   stopped:{ reason:'there is a problem', index:0, fn:fn1}
+# }
 ```
 
 ### Use Context to Pass on a Value
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
 fn1 = -> this.give = 'high 5'
 fn2 = -> if this.give is 'high 5' then 'cheer'
 
 array = [ fn1, fn2 ]
 
-result = builder.chain array     # passing functions as args also works
+chain = buildChain()    # also accepts options object with `array`
 # result is {success:true, chain:Function}
 
-result = result.chain()          # will use an empty object as context
+result = chain.run()          # will use an empty object as context
 # fn2 will, uh, *cheer*
 # result is {success:true}
 ```
@@ -137,14 +192,14 @@ result = result.chain()          # will use an empty object as context
 ### Throw Error
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
 fn1 = -> throw new Error 'my bad'
 
-result = builder.chain fn1           # Example without array
+chain = buildChain fn1           # Example without array
 # result is {success:true, chain:Function}
 
-result = result.chain()
+result = chain.run()
 
 # fn1 will throw an error
 # chain will catch it, end the chain, and include it in the result
@@ -177,7 +232,7 @@ You may provide an options object on your function which includes a
 your function.
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
 specificThis = some:'special this'
 
@@ -187,7 +242,7 @@ fn = (sharedContext) ->
 
 fn.options = this:specificThis
 
-result = builder.chain fn
+chain = buildChain fn
 # result is {success:true, chain:Function}
 
 result.chain shared:'object'
@@ -216,7 +271,7 @@ to do, so, it *should* be easy to remember to do it.
 Example:
 
 ```coffeescript
-builder = require 'chain-builder'
+buildChain = require 'chain-builder'
 
 specificThis = some:'special this'  # make a sample object for options.this
 
@@ -271,12 +326,12 @@ fn1 = function() { console.log(this.message); };
 
 array = [fn1];
 
-result = builder.chain(array);
+chain = buildChain(array);
 // result is {success:true, chain:Function}
 // passing functions as args also works
-// result = builder.chain(fn1, fn2);
+// chain = buildChain(fn1, fn2);
 
-result = result.chain({ message: 'hello' });
+result = chain.run({ message: 'hello' });
 
 // prints 'hello' to the console
 // result is {success:true}
@@ -292,10 +347,10 @@ fn2 = function() { console.log('I won\'t run'); };
 
 array = [ fn1, fn2 ];
 
-result = builder.chain(array);
+chain = buildChain(array);
 // result is {success:true, chain:Function}
 
-result = result.chain({problem:true});
+result = chain.run({problem:true});
 
 // fn2 will never run.
 // result is {error:'received false', type:'chaining'}
@@ -311,9 +366,9 @@ fn2 = function() { if(this.give === 'high 5') return 'cheer'; };
 
 array = [ fn1, fn2 ];
 
-result = builder.chain(array);
+chain = buildChain(array);
 
-result = result.chain();
+result = chain.run();
 
 // fn2 will, uh, *cheer*
 // result is {success:true}
