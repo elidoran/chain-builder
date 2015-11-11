@@ -134,6 +134,14 @@ describe 'test running chain', ->
   chain = null
   beforeEach -> chain = buildChain()
 
+  it 'should catch thrown errors', ->
+    chain.add -> throw new Error 'my bad'
+    results = chain.run()
+    assert results, 'should return results'
+    assert results.result, 'results should contain the result'
+    assert results.result.error, 'result should contain the `error`'
+    assert.equal results.result.error.message, 'my bad'
+
   describe 'synch\'ly', ->
 
     it 'without specifying a context should use default context and return it', ->
