@@ -242,7 +242,7 @@ See:
 
 ```coffeescript
 # we'll use bind on this one
-fn1Original = -> console.log this.message
+fn1Original = -> console.log this.message  # that's a one and a capital O
 fn1This = message:'I am two calls'
 fn1Bound = fn1.bind fn1This
 
@@ -263,66 +263,193 @@ fn1Bound.call context, control, context
 fn1Bound = -> fn1Original.apply fn1This, Array.prototype.slice.call arguments
 # so, the first call specifies a *this* which will be overridden by the bound function.
 
-# for fn2, it is simpler because it passes the special this to the first *call*
-# a second call. No need for bind().
+# for fn2, it is simpler because it passes the special this to the first
+# *call*. So, no second call. No need for bind().
 fn2.call fn2.options.this, control, context
 ```
 
 Note, using `control.context()` overrides the *context* provided to the next function. Using `fn.options.this` overrides the *this*. This means, it's possible to completely change what a function receives as context and this and have a different view than all other functions called in a chain.
 
-### Override Shared Context
+### How to Control the Shared Context
 
-It's possible to override the context two ways:
+The *shared context* can be manipulated in multiple ways.
+
+When calling `chain.run()` you may specify a context as an option: `chain.run context:{}`. See more in the [chain.run() API](#api-chainrun).
+
+Once a chain is running you may alter the context used both *permanently* and *impermanently* using the `chain.context()` function. That function will also execute the next function in the chain.
 
 1. `control.context newContext` - this will override the context used by the next function called *only*. the default context is unaffected and will be used by functions after the next one. A function may choose to pass on this *impermanently* overridden context by doing an override (`control.context context`) again and passing the context to it.
-2. `control.context newContext, true` - the *true* means it's a *permanent* override. It will set the default context used for all subsequent functions. Also, the default context is supplied in the final results. 
+2. `control.context newContext, true` - the *true* means it's a *permanent* override. It will set the default context used for all subsequent functions. Also, the default context is supplied in the final results, so, a permanently overridden context will then be in the final results.
+
+Here is an example of an impermanent override:
 
 ```coffeescript
 buildChain = require 'chain-builder'
 
-specificThis = some:'special this'  # make a sample object for options.this
+defaultContext = {}
+overrideContext = {}
 
-fn = (next, sharedContext) ->
-  console.log '*this* is specificThis. some=', this.some
-  console.log 'sharedContext is a shared ', sharedContext.shared
-  next sharedContext # not *this*
+fn1 = -> this.fn1 = 'this'
 
-fn.options = this:specificThis   # set it in the function's options object
+fn2 = (control, context) -> context.fn2 = 'context'
 
-result = builder.pipeline fn
-# result is {success:true, pipeline:Function}
+fn3 = (control) ->
+  this.fn3 = 'this'
+  control.context overrideContext
 
-result.pipeline shared:'object'  # provided the *shared context*
+fn4 = (control, context) ->
+  this.fn4 = 'this'
+  context.fn4 += ', context'
 
-# prints:
-#   *this* is specificThis. some=special this
-#   sharedContext is a shared object
+fn5 = (control, context) ->
+  this.fn5 = 'this'
+  context.fn5 += ', context'
+
+chain = buildChain array:[fn1, fn2, fn3, fn4, fn5]
+result = chain.run context:defaultContext
+result = # {
+#   result:true
+#   context: {        # this is the default context, missing `fn4`
+#     fn1 : 'this'
+#     fn2 : 'context'
+#     fn3 : 'this'
+#     fn5 : 'this, context'
+#   }
+# }
+overrideContext = # {
+#   fn4 : 'this, context'
+# }
 ```
 
-That is, unless you *want* to override the shared context with something else.
-You still can.
+Only `fn4` received the `overrideContext`.
 
-Also, keep in mind the function executed next may have its own `options.this`
-set which will be applied as `this` instead of the object you provide to your
-`next` call. That will still become the *shared context* of the next call.
+Here is an example of a permanent override:
 
+```coffeescript
+buildChain = require 'chain-builder'
 
-## Usage: Pipeline
+defaultContext = {}
+overrideContext = {}
 
-TODO: fill in pipeline specific info.
+fn1 = -> this.fn1 = 'this'
+
+fn2 = (_, context) -> context.fn2 = 'context'
+
+fn3 = (control) ->
+  this.fn3 = 'this'
+  control.context overrideContext, true    # <-- the `true` makes it permanent
+
+fn4 = (control, context) ->
+  this.fn4 = 'this'
+  context.fn4 += ', context'
+
+fn5 = (control, context) ->
+  this.fn5 = 'this'
+  context.fn5 += ', context'
+
+chain = buildChain array:[fn1, fn2, fn3, fn4, fn5]
+result = chain.run context:defaultContext
+result = # {
+#   result:true
+#   context: {   <-- this is the overrideContext
+#     fn4 : 'this, context'
+#     fn5 : 'this, context'
+#   }
+# }
+defaultContext = # {  <-- wasn't returned in final result, doesn't have fn4/fn5
+  #     fn1 : 'this'
+  #     fn2 : 'context'
+  #     fn3 : 'this'
+# }
+overrideContext = # {  <-- was in final result, contains fn's after the override
+  #     fn4 : 'this, context'
+  #     fn5 : 'this, context'
+# }
+```
+
+## Usage: Pipeline/Filter Style
+
+This style allows performing work after the later functions return. It relies on synchronous execution.
+
+Here is an example:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = (control) ->
+  # provide some value into the context from some operation
+  this.value = doSomeOperation()
+
+  # call the later functions which will do something with the value
+  result = control.next()
+
+  # check for an error before doing more work
+  unless result?.error?
+
+    # do something after the rest of the chain has run
+    this.anotherValue = someOtherOperation this.valueFromLaterFunctions
+
+  # then let the function return the result it received
+  # Note, this can be changed as well, or, not returned at all.
+  return result
+
+fn2 = () -> this.valueFromLaterFunctions = someOperationOfItsOwn()
+
+chain = buildChain array:[fn1, fn2]
+result = chain.run()
+result = # {
+#   value: 'something'                        <-- fn1 put this into context
+#   valueFromLaterFunctions: 'something more' <-- fn2 put this into context
+#   anotherValue: 'something else'            <-- fn1 did this *after* fn2 ran
+# }
+```
 
 
 ## Usage: Asynchronous
 
-The pipeline provides a *next* callback so it can be used for asynchronous operations.
+Although the above examples show synchronous execution it is possible to run a chain asynchronously using the `control.pause()` function.
+
+An example:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = -> console.log this.message1
+
+fn2 = (control, context) ->
+  console.log this.message2
+  resume = control.pause()  # returns a function to call to resume execution
+  setTimeout resume, 1000 # schedule resume in a second
+  return # return nothing
+
+fn3 = () -> console.log this.message3
+
+chain = buildChain array:[fn1, fn2, fn3]
+result = chain.run
+  message1: 'in fn1'
+  message2: 'in fn2 and pausing'
+  message3: 'resumed and in fn3'
+
+# this will be printed before the chain is resumed and fn3 is run
+console.log 'back from chain.run()'
+
+# the console will print:
+#   in fn1
+#   in fn2 and pausing
+#   back from chain.run()
+#   resumed and in fn3
+```
+
 
 # JavaScript Style Usage
 
-[CoffeeScript Usage](#usage-chain)
+[CoffeeScript Usage](#usage)
 
-## Usage: Chain
+## JS Usage
 
-### Simple
+TODO: complete all JS code examples for each CS example above.
+
+### JS Simple
 
 ```javascript
 buildChain = require('chain-builder');
@@ -347,61 +474,6 @@ result = chain.run(context);
 //   result:true,
 //   context: { message:'hello there, Bob' }
 // }
-```
-
-### Stopping Chain
-
-```javascript
-builder = require('chain-builder');
-
-fn1 = function() { if(this.problem) return false; };
-fn2 = function() { console.log('I won\'t run'); };
-
-array = [ fn1, fn2 ];
-
-chain = buildChain(array);
-// result is {success:true, chain:Function}
-
-result = chain.run({problem:true});
-
-// fn2 will never run.
-// result is {error:'received false', type:'chaining'}
-```
-
-### Use Context to Pass on a Value
-
-```javascript
-builder = require('chain-builder');
-
-fn1 = function() { this.give = 'high 5'; };
-fn2 = function() { if(this.give === 'high 5') return 'cheer'; };
-
-array = [ fn1, fn2 ];
-
-chain = buildChain(array);
-
-result = chain.run();
-
-// fn2 will, uh, *cheer*
-// result is {success:true}
-```
-
-### Throw Error
-
-```javascript
-builder = require('chain-builder');
-
-fn1 = function() { throw new Error('my bad'); };
-
-chain = builder.chain fn1
-
-context = {};   // declare our own context to extract chainError later
-
-result = chain(context);
-
-// fn1 will throw an error
-// chain will catch it, end the chain, and include it in the result
-// result is {error:'chain function threw error', type:'caught', Error:Error}
 ```
 
 ## MIT License
