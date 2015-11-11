@@ -8,7 +8,7 @@ Manage an array of functions and execute them in a series with a variety of flow
 Some of the features:
 
 1. "chain of command" - call functions in series
-2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`)
+2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function a input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
 3. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
 4. accepts a `done` callback to send error or result to
 5. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
