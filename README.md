@@ -440,6 +440,70 @@ console.log 'back from chain.run()'
 #   resumed and in fn3
 ```
 
+If your code calls the `resume` function then it will receive the final result returned by `resume`.
+
+Using `setTimeout()` and other similar functions will make extra work to get that. So, you may specify a `done` callback to `chain.run()` to receive the final results, or the error, when a chain run completes.
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = -> console.log this.message1
+
+fn2 = (control, context) ->
+  console.log this.message2
+  resume = control.pause()  # returns a function to call to resume execution
+  setTimeout resume, 1000 # schedule resume in a second
+  return # return nothing
+
+fn3 = () -> console.log this.message3
+
+chain = buildChain array:[fn1, fn2, fn3]
+
+# specify a done callback as part of the options object which will be run when
+# the chain run is finished
+result = chain.run done:(error, results) ->
+  # the results object is the same as what chain.run() returns when synchronous
+  console.log 'in done'
+
+# this will be printed before the chain is resumed and fn3 is run, and,
+# before the done callback is called, of course
+console.log 'back from chain.run()'
+
+# the console will print:
+#   in fn1
+#   in fn2 and pausing
+#   back from chain.run()
+#   resumed and in fn3
+#   in done
+```
+
+
+## API
+
+TODO: Complete API specifying each function available
+
+### API: buildChain()
+
+### API: chain.add(fn[, fn]*)
+
+May also provide an array as an argument.
+
+### API: chain.remove(fn[, fn]*)
+
+May also provide an array as an argument.
+
+### API: chain.run(options:Object[, done:Function])
+
+### API: control.next()
+
+### API: control.context(Object)
+
+### API: control.pause(reason:String)
+
+### API: control.stop(reason:String)
+
+### API: control.fail(reason:String)
+
 
 # JavaScript Style Usage
 
