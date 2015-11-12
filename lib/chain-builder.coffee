@@ -66,14 +66,18 @@ class Chain extends require('events').EventEmitter
 
   add: (fns...) ->
     if Array.isArray fns?[0] then fns = fns[0] # unwrap array
+    length = @array.length
     for fn in fns
       unless 'function' is typeof(fn) then return error:'must be a function',fn:fn
       @array.push fn
+    if length isnt @array.length then @emit 'add', fns
     return success:true
 
   remove: (fn) ->
     index = @array.indexOf fn
-    return removed:if index > -1 then @array.splice index, 1
+    result = removed:if index > -1 then @array.splice index, 1
+    if index > -1 then @emit 'remove', fn
+    return result
 
   run: (options, done) ->
     context = options?.context ? {}                # get context or default to {}
