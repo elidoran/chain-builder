@@ -1,4 +1,8 @@
-Unreleased
+0.7.1 - 2015/11/12
+
+1. added emitting add/remove events
+
+0.7.0 - 2015/11/11
 
 1. change to using a class
 2. allow adding and removing functions from chain
