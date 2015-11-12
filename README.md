@@ -17,7 +17,7 @@ Some of the features:
 8. the context provided to each function is also the *this*, unless overridden via an option
 9. the *this* can be overridden per function via an options object on the function (better than bind because it uses a single `call()` instead of two)
 10. can override the context used by the next function (which can choose to pass that one on, or, allow the default context to be restored), and, can override the default context used by all future functions and is returned in the final result.
-11. is an *EventEmitter* with events for: start, pause, resume, stop, fail, done.
+11. is an *EventEmitter* with events for: start, pause, resume, stop, fail, add, remove, done.
 
 ## Install
 
@@ -525,12 +525,14 @@ May also provide an array as an argument.
 
 The chain emits these events:
 
-1. start: when a chain execution starts
-2. pause: when `control.pause()` is called
-3. resume: when the `resume` function, returned from `control.pause()`, is called
-4. stop: when `control.stop()` is called
-5. fail: when `control.fail()` is called
-4. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
+1. add: when functions are added to the chain
+2. remove: when functions are removed from the chain
+3. start: when a chain execution starts
+4. pause: when `control.pause()` is called
+5. resume: when the `resume` function, returned from `control.pause()`, is called
+6. stop: when `control.stop()` is called
+7. fail: when `control.fail()` is called
+8. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
 
 
 # JavaScript Style Usage
