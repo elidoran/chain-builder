@@ -23,9 +23,9 @@
   },
   "bugs": "http://github.com/elidoran/chain-builder/issues",
   "devDependencies": {
-    "coffee-script": "^1.10.0",
-    "mocha": "^2.3.3",
-    "nave": "^0.5.3"
+    "coffee-script": "^1.11.1",
+    "mocha": "^3.1.2",
+    "nave": "^1.0.1"
   },
   "dependencies": {}
 }
