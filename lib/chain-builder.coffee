@@ -62,7 +62,14 @@ class Control
 
 class Chain extends require('events').EventEmitter
 
-  constructor: (options) -> @array = options?.array ? []
+  constructor: (options) ->
+    array =
+      if Array.isArray options then options
+      else if typeof options is 'function' then [ options ]
+      else if Array.isArray options?.array then options.array
+      else if not options? then []
+
+    @array = array
 
   add: (fns...) ->
     if Array.isArray fns?[0] then fns = fns[0] # unwrap array
@@ -75,8 +82,10 @@ class Chain extends require('events').EventEmitter
 
   remove: (fn) ->
     index = @array.indexOf fn
-    result = removed:if index > -1 then @array.splice index, 1
-    if index > -1 then @emit 'remove', fn
+    result = {}
+    if index > -1
+      result.removed = @array.splice index, 1
+      @emit 'remove', fn
     return result
 
   run: (options, done) ->
@@ -101,7 +110,18 @@ class Chain extends require('events').EventEmitter
 
 
 module.exports = (options) ->
-  if Array.isArray options then options = array:options
-  return new Chain options
+  array =
+    if Array.isArray options then options
+    else if typeof options is 'function' then [ options ]
+    else if Array.isArray options?.array then options.array
+    else []
+
+  # validate array's contents: must be functions
+  for element,index in array
+    unless 'function' is typeof(element)
+      return error:'Elements must be functions', element:element, index:index
+
+  new Chain array:array
+
 module.exports.Chain = Chain
 module.exports.Control = Control

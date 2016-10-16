@@ -8,7 +8,7 @@ Manage an array of functions and execute them in a series with a variety of flow
 Some of the features:
 
 1. "chain of command" - call functions in series
-2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function a input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
+2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function as input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
 3. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
 4. accepts a `done` callback and sends the error or result to it
 5. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
@@ -43,7 +43,7 @@ chain.add fn1, fn2, fn3
 # a mutable context object given to each fn in the chain
 context = message:'hello'
 
-result = chain.run context
+result = chain.run context:context
 # prints 'hello there, Bob'
 # result has information depending on what occurred, this simple one is: {
 #   result:true
@@ -121,9 +121,9 @@ buildChain = require 'chain-builder'
 
 fn1 = -> this.done = true
 fn2 = (control) -> if this.done then control.stop 'we are done'
-fn3 = -> console.log 'I won\'t run'
+fn3 = -> console.log 'I wont run'
 
-chain = buildChain array:[ fn1, fn2 ]
+chain = buildChain array:[ fn1, fn2, fn3 ]
 
 result = chain.run done:false
 # fn3 will never run.
@@ -140,11 +140,13 @@ buildChain = require 'chain-builder'
 
 fn1 = -> this.problem = true
 fn2 = (control) -> if this.problem then control.fail 'there is a problem'
-fn3 = -> console.log 'I won\'t run'
+fn3 = -> console.log 'I wont run'
 
-chain = buildChain array:[ fn1, fn2 ]
+chain = buildChain array:[ fn1, fn2, fn3 ]
 
-result = chain.run problem:false
+context = problem:false
+
+result = chain.run context:context
 # fn3 will never run.
 # result is: {
 #   result: false
@@ -225,7 +227,7 @@ fn.options = this:specificThis
 
 chain = buildChain array:[fn]
 
-chain.run shared:'object'
+chain.run context: shared:'object'
 
 # prints:
 #   *this* is specificThis. some=special this
@@ -562,7 +564,7 @@ chain.add(fn1, fn2, fn2);
 // a mutable object given to each fn in the chain
 context = {message:'hello'}
 
-result = chain.run(context);
+result = chain.run({context: context});
 // prints 'hello there, Bob' to the console
 // result has information depending on what occurred, this simple one is: {
 //   result:true,
