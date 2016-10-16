@@ -1,6 +1,6 @@
 {
   "name": "chain-builder",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "index.js",
   "author": "Eli Doran <eli@elidoran.com>",
