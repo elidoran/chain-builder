@@ -75,8 +75,10 @@ class Chain extends require('events').EventEmitter
 
   remove: (fn) ->
     index = @array.indexOf fn
-    result = removed:if index > -1 then @array.splice index, 1
-    if index > -1 then @emit 'remove', fn
+    result = {}
+    if index > -1
+      result.removed = @array.splice index, 1
+      @emit 'remove', fn
     return result
 
   run: (options, done) ->
