@@ -43,7 +43,7 @@ chain.add fn1, fn2, fn3
 # a mutable context object given to each fn in the chain
 context = message:'hello'
 
-result = chain.run context
+result = chain.run context:context
 # prints 'hello there, Bob'
 # result has information depending on what occurred, this simple one is: {
 #   result:true
@@ -144,7 +144,9 @@ fn3 = -> console.log 'I wont run'
 
 chain = buildChain array:[ fn1, fn2, fn3 ]
 
-result = chain.run problem:false
+context = problem:false
+
+result = chain.run context:context
 # fn3 will never run.
 # result is: {
 #   result: false
@@ -225,7 +227,7 @@ fn.options = this:specificThis
 
 chain = buildChain array:[fn]
 
-chain.run shared:'object'
+chain.run context: shared:'object'
 
 # prints:
 #   *this* is specificThis. some=special this
@@ -562,7 +564,7 @@ chain.add(fn1, fn2, fn2);
 // a mutable object given to each fn in the chain
 context = {message:'hello'}
 
-result = chain.run(context);
+result = chain.run({context: context});
 // prints 'hello there, Bob' to the console
 // result has information depending on what occurred, this simple one is: {
 //   result:true,
