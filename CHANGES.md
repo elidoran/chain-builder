@@ -1,3 +1,16 @@
+0.8.0 - 2016/10/16
+
+1. added old revisions to README
+2. added missing `context:context` in code examples in README
+3. added a check to ensure array contains all functions
+4. tweaked options processing a bit to accept a few more types of args which end up being an array
+5. fixed the test scripts to run the individual one when local and test all on travis.
+6. cleaned up scripts to be DRY
+7. removed node 0.10 testing
+8. removed the `index.js` file which just forwarded into the `lib/` folder.
+9. updated LICENSE copyright year
+10. switched test scripts to do one local script and changed Travis to separately test different node versions
+
 0.7.1 - 2015/11/12
 
 1. added emitting add/remove events
