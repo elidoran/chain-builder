@@ -1,5 +1,5 @@
 assert = require 'assert'
-buildChain = require '../index'
+buildChain = require '../lib'
 
 # 1. build chain
 describe 'test building chain', ->
