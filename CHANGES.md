@@ -1,5 +1,5 @@
 
-0.9.0 - 2016/10/23
+0.9.1 - 2016/10/23
 
 1. added clear()
 2. splicing new functions into array instead of pushing one at a time
