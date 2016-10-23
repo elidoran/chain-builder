@@ -1,3 +1,10 @@
+
+0.9.0 - 2016/10/23
+
+1. added clear()
+2. splicing new functions into array instead of pushing one at a time
+3. including `chain` in start/done event emits
+
 0.8.0 - 2016/10/16
 
 1. added old revisions to README
