@@ -76,7 +76,9 @@ class Chain extends require('events').EventEmitter
     length = @array.length
     for fn in fns
       unless 'function' is typeof(fn) then return error:'must be a function',fn:fn
-      @array.push fn
+      # @array.push fn
+    # no error, so, splice them all into there
+    @array.splice @array.length, 0, fns...
     if length isnt @array.length then @emit 'add', fns
     return success:true
 
@@ -88,11 +90,17 @@ class Chain extends require('events').EventEmitter
       @emit 'remove', fn
     return result
 
+  clear: ->
+    if @array.length > 0      # only operate when there's some content
+      array = @array          # remember the array
+      @array = []             # new empty array = clear
+      @emit 'remove', array   # emit a remove event with the array
+
   run: (options, done) ->
     context = options?.context ? {}                # get context or default to {}
     done = options?.done ? done                    # look for `done`
     control = new Control @, @array, context, done # create controller
-    @emit 'start', control:control
+    @emit 'start', control:control, chain:this
     result = control._execute()                    # starts the chain
     if control.paused?                             # a paused chain isn't done
       results = paused:control.paused              # return only paused info
@@ -101,7 +109,7 @@ class Chain extends require('events').EventEmitter
     return results                                 # return results, synch'ly
 
   _finish: (result, control) ->
-    results = result:result, context:control._context
+    results = result:result, context:control._context, chain:this
     results.stopped = control.stopped if control.stopped?
     results.failed  = control.failed  if control.failed?
     control._done? result.error, results
