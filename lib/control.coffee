@@ -1,62 +1,129 @@
-
+###
+  Control managed executing a Chain and provides advanced functionality to
+  the functions called in the chain.
+###
 module.exports = class Control
 
   # TODO: consider array.slice() to make our own copy
   constructor: (@_chain, @_array, @_context, @_done) -> @_index = -1
 
+  # returned (bound) by the pause() function
   _resume: ->
-    @_wasPaused = @paused
+
+    # eliminate the pause info because we're no longer paused
     @paused = null
+
+    # let everyone know we're resuming now
     @_chain.emit 'resume', this # TODO: Not sure what to include here
+
+    # begin executing again. this restarts the sync style execution with a return
     result = @_execute()
+
+    # once done executing, create the sync results and return them
     results = @_chain._finish result, this
+
     return results
 
-  # more readable for pipeline style to call next() and then do more work after it
+  # more readable for pipeline style to call next() and then do more work after it.
+  # if a function wants to do work after the rest of the chain has executed,
+  # then it calls next(), which returns once the rest are done.
+  # Note: that's for sync processing. if they pause(), then, that'll return
+  # to them as the result with the 'paused' info.
   next: -> @_execute()
 
+  # allows specifying a context to use in the next call, or, override it permanently
   context: (context, permanent) ->
+
+    # if they specify 'permanent' then overwrite our stored context with this one
+    # this ensures it will be used from now on
     if permanent then @_context = context
+
+    # begin executing the chain again using this new context.
+    # without the 'permanent' overwrite above, this will only be used to call
+    # the next function before being dropped.
     @_execute context
 
+  # this is the main function to execute the chain
   _execute: (context) ->
+    # these shouldn't ever happen...
     if @paused?  then throw new Error 'paused, can not perform _execute()'
     if @stopped? then throw new Error 'stopped, can not perform _execute()'
     if @failed?  then throw new Error 'failed, can not perform _execute()'
 
+    # loop thru executing functions unless paused/stopped/failed
     loop
+      # move forward
       @_index++
+
+      # local aliases
       index = @_index
       array = @_array
+
+      # if there's more to do
       if index < array.length
+        # wrap it to prevent a thrown error from taking over control
         try
+          # local aliases (for readability)
           control = this
           context ?= @_context
           fn = array[index]
+
+          # did they specify a `this` to use instead of the context?
           fnThis = fn?.options?.this ? context
+
+          # call the function with each important part
           result = fn.call fnThis, control, context
-          context = null # don't reuse impermanently overridden context (_execute's arg)
+
+          # don't reuse *impermanently* overridden context (_execute's arg)
+          # in the next loop iteration.
+          context = null
+
         catch e then error = e
 
-        return result if result?.error? # breaks the loop
-        return error:error if error? # breaks the loop
+        # break the loop if we have an error to return
+        return result if result?.error?
+        return error:error if error?
 
-        return result if @paused? or @stopped? or @failed? # breaks the loop
+        # break the loop if they said so
+        return result if @paused? or @stopped? or @failed?
 
+      # we made it all the way
       else return true
 
-  pause: (reason) ->  # provide a resume callback to switch to async processing
+  # provides a resume() callback to switch to async processing
+  pause: (reason) ->
+    # remember we paused, store the reason and related info
     @paused = reason:reason, index:@_index, fn:@_array[@_index]
-    @_chain.emit 'pause', @paused
-    return @_resume.bind this  # return as the `resume` function
 
+    # let everyone know the chain paused
+    @_chain.emit 'pause', @paused
+
+    # return as the `resume` function. bind it to this `control`
+    return @_resume.bind this
+
+  # stops executing the chain with the reason provided
   stop: (reason) ->
+    # remember we stopped, store the reason and related info
     @stopped = reason:reason, index:@_index, fn:@_array[@_index]
-    result = context:@context
+
+    # let's emit both the context and the stopped info
+    result = context:@context, stopped:@stopped
+
+    # let everyone know we stopped
     @_chain.emit 'stop', result
+
+    # return true. sure, we stopped, but that's not an error or failure
     return true
 
   fail: (reason) ->
+    # remember we failed, store the reason and related info
     @failed = reason:reason, index:@_index, fn:@_array[@_index]
-    @_chain.emit 'fail', @failed
+
+    # let's emit both the context and the 'failed' info
+    result = context:@context, failed:@failed
+
+    # let everyone know we 'failed'. provide the related info
+    @_chain.emit 'fail', result
+
+    # return false because we failed.
     return false
