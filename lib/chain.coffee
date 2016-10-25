@@ -1,21 +1,24 @@
-
 Control = require './control'
 
+###
+  Chain holds an array of functions to execute in sequence managed by a Control.
+###
 module.exports = class Chain extends require('events').EventEmitter
 
   constructor: (options) ->
 
     # if module's builder function already validated the array then use it
+    # and avoid redoing that same work
     if options?.__validated
       array = options.array
 
-    # must find the array and validate it
+    # otherwise, let's be safe, must find the array and validate it
     else
       array =
-        if Array.isArray options then options
-        else if typeof options is 'function' then [ options ]
-        else if Array.isArray options?.array then options.array
-        else []
+        if Array.isArray options then options                    # new Chain [...]
+        else if typeof options is 'function' then [ options ]    # new Chain fn
+        else if Array.isArray options?.array then options.array  # new Chain array:[]
+        else []                                                  # new Chain()
 
       # validate array's contents: must be functions
       for element,index in array
@@ -23,8 +26,13 @@ module.exports = class Chain extends require('events').EventEmitter
           # can't return a value from constructor, so, throw Error
           throw new Error 'Elements must be functions. Invalid #'+index+':'+element
 
+    # an array of functions, so simple, until you wrap a Chain around it...
     @array = array
 
+  # add functions to the array:
+  #  chain.add fn
+  #  chain.add fn1, fn2, fn3, ...
+  #  chain.add [ fn1, fn2, ... ]
   add: (fns...) ->
 
     # unwrap array
@@ -48,25 +56,41 @@ module.exports = class Chain extends require('events').EventEmitter
     # it's all good
     return success:true
 
+  # remove function from the array
+  #  chain.remove fn1
   remove: (fn) ->
+
+    # return -1 unless we find it
     index = @array.indexOf fn
+
+    # by default, return an empty object because we didn't remove anything
     result = {}
+
+    # if we found it tho
     if index > -1
+      # then remove it from the array and assign it into the result
       result.removed = @array.splice index, 1
+
+      # let everyone know we removed it
       @emit 'remove', fn
+
+    # and return the result whether it's empty or not
     return result
 
+  # empty the chain of all functions and let everyone know
   clear: ->
     if @array.length > 0      # only operate when there's some content
       array = @array          # remember the array
       @array = []             # new empty array = clear
       @emit 'remove', array   # emit a remove event with the array
 
+  # main function which begins the execution of the chain
+  # options optionally configures the `context` and the `done`
   run: (options, done) ->
     context = options?.context ? {}                # get context or default to {}
     done = options?.done ? done                    # look for `done`
     control = new Control @, @array, context, done # create controller
-    @emit 'start', control:control, chain:this
+    @emit 'start', control:control, chain:this     # notify we're starting
     result = control._execute()                    # starts the chain
     if control.paused?                             # a paused chain isn't done
       results = paused:control.paused              # return only paused info
