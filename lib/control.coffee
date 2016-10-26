@@ -7,8 +7,14 @@ module.exports = class Control
   # TODO: consider array.slice() to make our own copy
   constructor: (@_chain, @_array, @_context, @_done) -> @_index = -1
 
+
   # returned (bound) by the pause() function
   _resume: ->
+    # TODO: do we honor chain.disable() during an active execution?
+    # it's possible to disable the chain during a pause. should we check
+    # for chain._disabled? and refuse to resume?
+    # if @_chain._disabled? # if we're disabled then tell them
+    #   return result:false, reason:'Chain is disabled', disabled:@_chain._disabled
 
     # eliminate the pause info because we're no longer paused
     @paused = null
@@ -24,12 +30,14 @@ module.exports = class Control
 
     return results
 
+
   # more readable for pipeline style to call next() and then do more work after it.
   # if a function wants to do work after the rest of the chain has executed,
   # then it calls next(), which returns once the rest are done.
   # Note: that's for sync processing. if they pause(), then, that'll return
   # to them as the result with the 'paused' info.
   next: -> @_execute()
+
 
   # allows specifying a context to use in the next call, or, override it permanently
   context: (context, permanent) ->
@@ -43,6 +51,7 @@ module.exports = class Control
     # the next function before being dropped.
     @_execute context
 
+
   # this is the main function to execute the chain
   _execute: (context) ->
     # these shouldn't ever happen...
@@ -52,8 +61,27 @@ module.exports = class Control
 
     # loop thru executing functions unless paused/stopped/failed
     loop
-      # move forward
-      @_index++
+
+      # if remove() was called, then, instead of moving the index forward,
+      # remove the current function.
+      if @_remove?
+
+        # get rid of the marker
+        reason = @_remove
+        delete @_remove
+
+        # remove the function and remember it for an emit
+        fn = @_array.splice @_index, 1
+
+        # emit the removal
+        @_chain.emit 'remove', result:true, removed:fn, reason:reason
+
+      else # otherwise, move forward to the next function
+
+        @_index++
+
+        # keep incrementing while the function is disabled
+        @_index++ while @_array?[@_index]?.options?.disabled?
 
       # local aliases
       index = @_index
@@ -67,6 +95,8 @@ module.exports = class Control
           control = this
           context ?= @_context
           fn = array[index]
+
+          # check if the `fn` is disabled
 
           # did they specify a `this` to use instead of the context?
           fnThis = fn?.options?.this ? context
@@ -90,6 +120,7 @@ module.exports = class Control
       # we made it all the way
       else return true
 
+
   # provides a resume() callback to switch to async processing
   pause: (reason) ->
     # remember we paused, store the reason and related info
@@ -100,6 +131,7 @@ module.exports = class Control
 
     # return as the `resume` function. bind it to this `control`
     return @_resume.bind this
+
 
   # stops executing the chain with the reason provided
   stop: (reason) ->
@@ -115,6 +147,7 @@ module.exports = class Control
     # return true. sure, we stopped, but that's not an error or failure
     return true
 
+
   fail: (reason) ->
     # remember we failed, store the reason and related info
     @failed = reason:reason, index:@_index, fn:@_array[@_index]
@@ -127,3 +160,18 @@ module.exports = class Control
 
     # return false because we failed.
     return false
+
+
+  # should this accept args like chain.remove() does?
+  # right now, it only allows a function to remove itself.
+  # it 'could' specify an id or index to remove another function.
+  # simply record this was called, then, when execution steps back into
+  # the `control` it can remove the function
+  remove: (reason = true) -> @_remove = reason
+
+
+  # start, temporarily, skipping execution of the current function.
+  # record a reason in case someone wants to know.
+  # Note: no matching control.enable() because the function will not run
+  # while it's disabled. Use chain.enable()
+  disable: (reason = true) -> @_chain._disable @_array[@_index], @_index, reason
