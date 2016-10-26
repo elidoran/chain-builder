@@ -1,9 +1,21 @@
 
+0.10.0 - UNRELEASED
+
+1. split `index` into three files. Put `Chain` and `Control` into two of them. Retain the builder function in `index`.
+2. add validation in the Chain constructor. skip it when the builder function has already done it.
+3. added `remove()` to both the `control` and `chain` objects to allow removing function. this makes it easy to add a function which will only run once, or any number of times until it believes it's done and wants to remove itself.
+4. added `enable()` `disable()` functions to the `chain`, and `disable()` to the control. This allows a function to mark itself as disabled which causes the chain to skip it during execution. It is reversed by a call to enable. The `chain` versions accept an index, a function, or a function 'id' to specify which one to enable/disable/remove.
+5. use an overridable `_buildContext` function to create the context for each chain execution
+6. make the default `_buildContext` function use `base` option as the prototype and `props` option as the property descriptor for a call to `Object.create()`.
+7. add `select()` function to `chain` which allows using a function to choose which chain functions to operate on for: `disable()`, `enable()`, `remove()`, and a generic one: `affect()`
+8. added a lot more tests to check all these things
+
 0.9.1 - 2016/10/23
 
 1. added clear()
 2. splicing new functions into array instead of pushing one at a time
 3. including `chain` in start/done event emits
+
 
 0.8.0 - 2016/10/16
 
@@ -17,6 +29,7 @@
 8. removed the `index.js` file which just forwarded into the `lib/` folder.
 9. updated LICENSE copyright year
 10. switched test scripts to do one local script and changed Travis to separately test different node versions
+
 
 0.7.1 - 2015/11/12
 
