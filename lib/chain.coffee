@@ -199,17 +199,20 @@ module.exports = class Chain extends require('events').EventEmitter
 
       return result
 
-    # find it based on the selector. may return an error
-    index = @_findIndex which
+    # otherwise, they're trying to disable a single function...
+    else
 
-    # if there's an error then we're done, return it
-    if index?.error? then return index
+      # find it based on the selector. may return an error
+      index = @_findIndex which
 
-    # get the fn
-    fn = @array[index]
+      # if there's an error then we're done, return it
+      if index?.error? then return index
 
-    # call sub-operation
-    @_enable fn
+      # get the fn
+      fn = @array[index]
+
+      # call sub-operation
+      @_enable fn
 
   _enable: (fn) ->
 
@@ -328,12 +331,12 @@ module.exports = class Chain extends require('events').EventEmitter
       # Note: this must happen every loop iteration
       index++
 
-    # all done  TODO: how to gather results of action to return here...
+    # all done
     return result:true, results:results
 
   # create a selector function capable of selecting the desired member functions
   # and then apply the utility functions to them.
-  #   selector = (fn) -> blah
+  #   selector = (fn, index) -> blah
   #   chain.select(selector).disable('reason')
   #   chain.select(selector).enable()
   #   chain.select(selector).remove()
@@ -379,7 +382,7 @@ module.exports = class Chain extends require('events').EventEmitter
 
 
   # main function which begins the execution of the chain
-  # options optionally configures `context`, `done`, and `_buildContext`
+  # optionally configure `context`, `done`, and `_buildContext`
   run: (options, done) ->
 
     if @_disabled? # if we're disabled then tell them
