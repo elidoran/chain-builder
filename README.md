@@ -32,7 +32,7 @@ Some of the features:
 
 [More Usage](#usage)
 
-Here is an extremely basic example to show the basic parts perform.
+Here is an extremely basic example to show the basic parts working together.
 
 ```javascript
 var buildChain = require('chain-builder')
@@ -48,15 +48,16 @@ chain.add(fn1);
 var results = chain.run();
 
 // the results object is:
-// results = {
-//   result: true    - means it was a success. no error. no fail().
-//   context: {}     - the default context is an empty object.
-// }
+results = {
+  result: true    // means it was a success. no error. no fail().
+  , context: {}   // the default context is an empty object.
+  , chain: /* the chain ... */
+}
 ```
 
 ## Usage: Simple
 
-Here I show use of the most commonly used features:
+The most commonly used features:
 
 1. accessing the `context` via function param or `this`
 2. reporting an error from inside a function
@@ -73,14 +74,14 @@ function guard(control) {
   }
 }
 
-// for simpler functions there's no need to use either function params, just *this*
+// for simpler functions there's no need to use either function params, use `this`
 function fn1() {
   // the initial `message` value is provided to `chain.run()` below
-  this.message += ' there'  // makes `message` = 'Hello there'
+  this.message += ' there';  // makes `message` = 'Hello there'
 }
 
 function fn2() {
-  this.message += ', Bob'   // makes message = 'Hello there, Bob'
+  this.message += ', Bob';   // makes message = 'Hello there, Bob'
 }
 
 function fn3() {
@@ -106,11 +107,11 @@ var context = { message: 'Hello' }
 // 2. alter the context's `message` property in fn1 and fn2
 // 3. print 'hello there, Bob' in function fn3
 // 4. return a result object which contains:
-// result = {
-//   result:true
-//   , context: { message:'Hello there, Bob' }
-//   , chain: ... - the chain used to run it
-// }
+result = {
+  result: true
+  , context: { message:'Hello there, Bob' }
+  , chain: /* ... the chain used to run it */
+}
 
 // now let's cause a fail by not providing a message property.
 // we'll reuse the above stuff, so delete the property.
@@ -144,15 +145,16 @@ Show many advanced features:
 2. add an array of functions from a module and then remove one of them
 3. add another group of functions and then remove multiple of them with a `select()` based on "labels" in their function options
 4. disable a function so it's skipped until we want it to join in
-5. provide a function which has its own special `this` configured, without using `bind()` (for a single function call, and the avoidance of `bind()`)
-6. use `control` *inside* a function to remove that function from the chain because it only wants to run once
-7. `pause()` the execution at one point to show making things asynchronous. also shows using both `resume()` and `resume.callback()` styles.
-8. one function which does `control.fail()` when it can't do its work
-9. one function which does `control.stop()` when it believes success has been achieved
-10. one function does work both when it is first called, and, after the subsequent functions in the chain have executed
-11. provide a custom `context` to the run
-12. show a "temporary override" of the context for the next function
-13. show a "permanent override" of the context
+5. enable a function which was disabled by default by its provider
+6. provide a function which has its own special `this` configured, without using `bind()` (for a single function call, and the avoidance of `bind()`)
+7. use `control` *inside* a function to remove that function from the chain because it only wants to run once
+8. `pause()` the execution at one point to show making things asynchronous. also shows using both `resume()` and `resume.callback()` styles.
+9. one function which does `control.fail()` when it can't do its work
+10. one function which does `control.stop()` when it believes success has been achieved
+11. one function does work both when it is first called, and, after the subsequent functions in the chain have executed
+12. provide a custom `context` to the run
+13. show a "temporary override" of the context for the next function
+14. show a "permanent override" of the context
 
 ```javascript
 var buildChain = require('chain-builder')
@@ -166,6 +168,8 @@ chain.add(require('some-module-with-fns'));
 chain.remove('the-one-we-dont-want');
 
 chain.add(require('another-module'));
+// some function from that module is disabled by default, so, enable it
+chain.enable('the.optin.id');
 
 // imagine the select function is:
 // function selectCacheFunctions(fn, index) {
@@ -224,6 +228,9 @@ function iPauseForAsync(control, context) {
       // second param, `context`, comes in handy now instead of `this`
       context.theFileContent = content;
     }
+
+    // always resume() whether there's an error or not.
+    resume();
   });
 
   // or, do something scheduled like:
