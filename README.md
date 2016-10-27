@@ -30,60 +30,59 @@ Some of the features:
 
 # Table of Contents (JS5)
 
-[JS6](http://github.com/elidoran/chain-builder/blob/master/README-JS6.md)
-[CS](http://github.com/elidoran/chain-builder/blob/master/README.coffee.md)
+[[JS6]](http://github.com/elidoran/chain-builder/blob/master/README-JS6.md)
+[[CS]](http://github.com/elidoran/chain-builder/blob/master/README.coffee.md)
 
 A. Usage
 
-    1. [Basic](#usage-basic)
-    2. [Simple](#usage-simple)
-    3. [Complex](#usage-complex)
+  1. [Basic](#usage-basic)
+  2. [Simple](#usage-simple)
+  3. [Complex](#usage-complex)
 
 B. Executing a Chain
 
-    1. [Control](#execution-control)
-    2. [Flow Styles](#execution-flow-styles)
-    3. [Context or This?](#use-context-or-this)
+  1. [Control](#execution-control)
+  2. [Flow Styles](#execution-flow-styles)
+  3. [Context or This?](#use-context-or-this)
 
 C. [Examples](#examples)
 
-    1. [Stopping Chain](#stopping-chain)
-    2. [Pass on a Value via Context](#use-context-to-pass-on-value)
-    3. [Thrown Errors](#thrown-error)
-    4. [Pipeline/Filter](#pipelinefilter-style)
-    5. [Asynchronous](#asynchronous)
+  1. [Stopping Chain](#stopping-chain)
+  2. [Pass on a Value via Context](#use-context-to-pass-on-value)
+  3. [Thrown Errors](#thrown-error)
+  4. [Pipeline/Filter](#pipelinefilter-style)
+  5. [Asynchronous](#asynchronous)
 
 D. [Advanced Contexts](#advanced-contexts)
 
-    1. [Two Contexts](#the-two-contexts)
-    2. [How to specify the this context](#how-to-specify-the-this-context)
-    3. [Why not use bind()?](#why-not-use-bind)
-    4. [Control the Shared Context](#how-to-control-the-shared-context)
+  1. [Two Contexts](#the-two-contexts)
+  2. [How to specify the this context](#how-to-specify-the-this-context)
+  3. [Why not use bind()?](#why-not-use-bind)
+  4. [Control the Shared Context](#how-to-control-the-shared-context)
 
 E. [API](#api)
 
-    1. [Exported Builder Function](#api-exported-builder-function)
+  1. [Exported Builder Function](#api-exported-builder-function)
+  2. [Chain](#api-chain)
 
-    2. [Chain](#api-chain)
+    a. [chain.run()](#api-chain-run)
+    b. [chain.add()](#api-chain-add)
+    c. [chain.remove()](#api-chain-remove)
+    d. [chain.disable()](#api-chain-disable)
+    e. [chain.enable()](#api-chain-enable)
+    f. [chain.select()](#api-chain-select)
 
-        a. [chain.run()](#api-chain-run)
-        b. [chain.add()](#api-chain-add)
-        c. [chain.remove()](#api-chain-remove)
-        d. [chain.disable()](#api-chain-disable)
-        e. [chain.enable()](#api-chain-enable)
-        f. [chain.select()](#api-chain-select)
+  3. [Control](#api-control)
 
-    3. [Control](#api-control)
-
-        a. [control.next()](#api-control-next)
-        b. [control.context()](#api-control-context)
-        c. [control.pause()](#api-control-pause)
-        d. [control.stop()](#api-control-stop)
-        e. [control.fail()](#api-control-fail)
-        f. [control.disable()](#api-control-disable)
-        g. [control.remove()](#api-control-remove)
-        h. [resume()](#api-resume)
-        i. [resume.callback()](#api-resume-callback)
+    a. [control.next()](#api-control-next)
+    b. [control.context()](#api-control-context)
+    c. [control.pause()](#api-control-pause)
+    d. [control.stop()](#api-control-stop)
+    e. [control.fail()](#api-control-fail)
+    f. [control.disable()](#api-control-disable)
+    g. [control.remove()](#api-control-remove)
+    h. [resume()](#api-resume)
+    i. [resume.callback()](#api-resume-callback)
 
 F. [MIT License](#mit-license)
 
