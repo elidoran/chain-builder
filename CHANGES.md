@@ -1,5 +1,5 @@
 
-0.10.0 - UNRELEASED
+0.10.0 - 2016/10/27
 
 1. split `index` into three files. Put `Chain` and `Control` into two of them. Retain the builder function in `index`.
 2. add validation in the Chain constructor. skip it when the builder function has already done it.
@@ -9,6 +9,12 @@
 6. make the default `_buildContext` function use `base` option as the prototype and `props` option as the property descriptor for a call to `Object.create()`.
 7. add `select()` function to `chain` which allows using a function to choose which chain functions to operate on for: `disable()`, `enable()`, `remove()`, and a generic one: `affect()`
 8. added a lot more tests to check all these things
+9. include functions removed during a chain execution via `control.remove()` in the final results
+10. remember results of `select()` action operations (such as `disable()`) and include in returned results
+11. added missing API documentation to README
+12. wrote a new README with JavaScript (ES5) code
+13. add `resume.callback()` helper to apply the `resume` to standard callback pattern `(error, result)`
+14. added tests for resume callback
 
 0.9.1 - 2016/10/23
 
