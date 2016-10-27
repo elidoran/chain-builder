@@ -30,6 +30,33 @@ module.exports = class Control
 
     return results
 
+  # sub-function on `_resume` (when returned, bound, by pause()).
+  # it helps create a (error, result) style callback function.
+  # use defaults...
+  _resumeCallback: (errorMessage = 'ERROR', resultKey = 'result') ->
+    # when called, we're attached to the "resumer".
+    resumer = this
+    control = resumer.control
+
+    # the standard param pattern has error first and result second
+    (err, res) ->
+
+      # if there's an error, then fail with both message and the Error
+      if err?
+        # not paused anymore
+        control.paused = null
+
+        # record the error as a fail
+        result = control.fail errorMessage, err
+
+        # we're done, so, finish up instead of calling resumer()
+        results = control._chain._finish result, control
+
+      # otherwise, store the result into the context with the key, then resume.
+      else
+        resumer.control._context[resultKey] = res
+        resumer()
+
 
   # more readable for pipeline style to call next() and then do more work after it.
   # if a function wants to do work after the rest of the chain has executed,
@@ -134,9 +161,18 @@ module.exports = class Control
     # let everyone know the chain paused
     @_chain.emit 'pause', @paused
 
-    # return as the `resume` function. bind it to this `control`
-    return @_resume.bind this
+    # return @_resume as the `resume` function. bind it to this `control`
+    resumer = @_resume.bind this
 
+    # the resumer.callback() execution can grab `control` from this
+    resumer.control = this
+
+    # also, for convenience, add the ability to generate a standard callback
+    # function with param pattern (error, result).
+    # accepts an error message and a key name to place the result into the context.
+    resumer.callback = @_resumeCallback
+
+    return resumer
 
   # stops executing the chain with the reason provided
   stop: (reason) ->
@@ -144,7 +180,7 @@ module.exports = class Control
     @stopped = reason:reason, index:@_index, fn:@_array[@_index]
 
     # let's emit both the context and the stopped info
-    result = context:@context, stopped:@stopped
+    result = context:@_context, stopped:@stopped
 
     # let everyone know we stopped
     @_chain.emit 'stop', result
@@ -153,12 +189,15 @@ module.exports = class Control
     return true
 
 
-  fail: (reason) ->
+  fail: (reason, error) ->
     # remember we failed, store the reason and related info
     @failed = reason:reason, index:@_index, fn:@_array[@_index]
 
+    # if they provided an error instance, then add it in
+    if error? then @failed.error = error
+
     # let's emit both the context and the 'failed' info
-    result = context:@context, failed:@failed
+    result = context:@_context, failed:@failed
 
     # let everyone know we 'failed'. provide the related info
     @_chain.emit 'fail', result
