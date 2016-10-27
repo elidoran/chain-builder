@@ -89,10 +89,17 @@ describe 'test chain.add()', ->
 
 
 # 3. remove
-# - chain.remove(index, 'reason')
+# - chain.remove(index)
 # - chain.remove('someid', 'reason')
+# - chain.remove('someid')
+# - chain.remove('someid', 'reason')
+# - chain.remove(someFn)
 # - chain.remove(someFn, 'reason')
+#
+# - control.remove()
 # - control.remove('reason')
+#
+# - chain.select(fn).remove()
 # - chain.select(fn).remove('reason')
 
 describe 'test chain.remove()', ->
@@ -102,7 +109,9 @@ describe 'test chain.remove()', ->
   fn2.options = id:'fn2'
   fn3 = ->
   fn3.options = id:'fn3'
+
   chain = null
+
   beforeEach ->
     chain = buildChain()
     chain.add fn1
@@ -124,13 +133,125 @@ describe 'test chain.remove()', ->
     assert.equal result.result, false
     assert.equal result.reason, 'not found'
 
-  it 'should remove fn1 from array by itself', ->
+
+  it 'should remove fn1 from array by index', ->
+    result = chain.remove 0
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by index with reason', ->
+    reason = 'the reason'
+    result = chain.remove 0, reason
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.equal result.removed.length, 1, 'should remove one function'
+    assert.equal result.reason, reason
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by index', ->
+    chain.add fn2, fn3
+    result = chain.remove 0
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn2 from array by index with reason', ->
+    reason = 'the reason'
+    result = chain.add fn2, fn3
+    result = chain.remove 'fn2', reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn2
+
+
+  it 'should remove fn1 from array by ID (single)', ->
+    result = chain.remove 'fn1'
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by ID (single) with reason', ->
+    reason = 'the reason'
+    result = chain.remove 'fn1', reason
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.equal result.reason, reason
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by ID (multiple)', ->
+    chain.add fn2, fn3
+    result = chain.remove 'fn1'
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by ID (multiple) with reason', ->
+    chain.add fn2, fn3
+    reason = 'the reason'
+    result = chain.remove 'fn1', reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn2 from array by ID (multiple)', ->
+    chain.add fn2, fn3
+    result = chain.remove 'fn2'
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn2
+
+  it 'should remove fn2 from array by ID (multiple) with reason', ->
+    reason = 'the reason'
+    chain.add fn2, fn3
+    result = chain.remove 'fn2', reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed?[0], fn2
+
+  it 'should remove fn3 from array by ID (multiple)', ->
+    chain.add fn2, fn3
+    result = chain.remove 'fn3'
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
+    assert.strictEqual result.removed?[0], fn3
+
+  it 'should remove fn3 from array by ID (multiple) with reason', ->
+    reason = 'the reason'
+    chain.add fn2, fn3
+    result = chain.remove 'fn3', reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
+    assert.strictEqual result.removed?[0], fn3
+
+
+
+  it 'should remove fn1 from array by itself (single)', ->
     result = chain.remove fn1
     assert.equal chain.array.length, 0, 'array should be empty'
     assert.strictEqual result.removed.length, 1, 'should remove one function'
     assert.strictEqual result.removed?[0], fn1
 
-  it 'should remove fn1 from array by itself', ->
+  it 'should remove fn1 from array by itself (single) with reason', ->
+    reason = 'the reason'
+    result = chain.remove fn1, reason
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.equal result.reason, reason
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn1 from array by itself (multiple)', ->
     chain.add fn2, fn3
     result = chain.remove fn1
     assert.equal chain.array.length, 2, 'array should be one less: 2'
@@ -139,7 +260,18 @@ describe 'test chain.remove()', ->
     assert.strictEqual result.removed.length, 1, 'should remove one function'
     assert.strictEqual result.removed?[0], fn1
 
-  it 'should remove fn2 from array by itself', ->
+  it 'should remove fn1 from array by itself (multiple) with reason', ->
+    reason = 'the reason'
+    chain.add fn2, fn3
+    result = chain.remove fn1, reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn1
+
+  it 'should remove fn2 from array by itself (multiple)', ->
     chain.add fn2, fn3
     result = chain.remove fn2
     assert.equal chain.array.length, 2, 'array should be one less: 2'
@@ -148,7 +280,18 @@ describe 'test chain.remove()', ->
     assert.strictEqual result.removed.length, 1, 'should remove one function'
     assert.strictEqual result.removed?[0], fn2
 
-  it 'should remove fn3 from array by itself', ->
+  it 'should remove fn2 from array by itself (multiple) with reason', ->
+    reason = 'the reason'
+    chain.add fn2, fn3
+    result = chain.remove fn2, reason
+    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
+    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
+    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
+    assert.strictEqual result.removed.length, 1, 'should remove one function'
+    assert.strictEqual result.removed?[0], fn2
+
+  it 'should remove fn3 from array by itself (multiple)', ->
     chain.add fn2, fn3
     result = chain.remove fn3
     assert.equal chain.array.length, 2, 'array should be one less: 2'
@@ -157,81 +300,112 @@ describe 'test chain.remove()', ->
     assert.strictEqual result.removed.length, 1, 'should remove one function'
     assert.strictEqual result.removed?[0], fn3
 
-
-  it 'should remove fn1 from array by ID', ->
-    result = chain.remove 'fn1'
-    assert.equal chain.array.length, 0, 'array should be empty'
-    assert.strictEqual result.removed.length, 1, 'should remove one function'
-    assert.strictEqual result.removed?[0], fn1
-
-  it 'should remove fn1 from array by ID', ->
+  it 'should remove fn3 from array by itself (multiple) with reason', ->
+    reason = 'the reason'
     chain.add fn2, fn3
-    chain.remove 'fn1'
+    result = chain.remove fn3, reason
     assert.equal chain.array.length, 2, 'array should be one less: 2'
-    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
-    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
-
-  it 'should remove fn2 from array by ID', ->
-    chain.add fn2, fn3
-    result = chain.remove 'fn2'
-    assert.equal chain.array.length, 2, 'array should be one less: 2'
-    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
-    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
-
-  it 'should remove fn3 from array by ID', ->
-    chain.add fn2, fn3
-    chain.remove 'fn3'
-    assert.equal chain.array.length, 2, 'array should be one less: 2'
+    assert.equal result.reason, reason
     assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
     assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
-
-
-  it 'should remove fn1 from array by index', ->
-    result = chain.remove 0
-    assert.equal chain.array.length, 0, 'array should be empty'
     assert.strictEqual result.removed.length, 1, 'should remove one function'
-    assert.strictEqual result.removed?[0], fn1
-
-  it 'should remove fn1 from array by index', ->
-    chain.add fn2, fn3
-    chain.remove 0
-    assert.equal chain.array.length, 2, 'array should be one less: 2'
-    assert.strictEqual chain.array[0], fn2, 'first element should be fn2'
-    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
-
-  it 'should remove fn2 from array by index', ->
-    chain.add fn2, fn3
-    result = chain.remove 'fn2'
-    assert.equal chain.array.length, 2, 'array should be one less: 2'
-    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
-    assert.strictEqual chain.array[1], fn3, 'second element should be fn3'
-
-  it 'should remove fn3 from array by index', ->
-    chain.add fn2, fn3
-    chain.remove 'fn3'
-    assert.equal chain.array.length, 2, 'array should be one less: 2'
-    assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
-    assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
+    assert.strictEqual result.removed?[0], fn3
 
 
   it 'should remove via control', ->
     remover = (control) -> control.remove()
     chain.add remover, fn2
     assert.equal chain.array.length, 3, 'array should have 3'
-    chain.run()
+    result = chain.run()
     assert.equal chain.array.length, 2, 'array should be one less: 2'
     assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
     assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
+    assert.strictEqual result.removed?[0], remover
 
-  it 'should remove via control', ->
-    remover = (control) -> control.remove()
+  it 'should remove via control with reason', ->
+    reason = 'the reason'
+    remover = (control) -> control.remove reason
     chain.add remover, fn2
     assert.equal chain.array.length, 3, 'array should have 3'
-    chain.run()
+    result = chain.run()
     assert.equal chain.array.length, 2, 'array should be one less: 2'
     assert.strictEqual chain.array[0], fn1, 'first element should be fn1'
     assert.strictEqual chain.array[1], fn2, 'second element should be fn2'
+    assert.strictEqual result.removed?[0], remover
 
+
+
+  it 'should remove zero functions with falsey selector', ->
+    chain.array = [ fn1, fn2, fn3 ]
+    assert.equal chain.array.length, 3, 'array should start with 3'
+    result = chain.select(-> false).remove()
+    assert.equal chain.array.length, 3, 'array should be unchanged'
+    assert.strictEqual result.removed, undefined, 'shouldnt be any removed'
+
+  it 'should remove all functions with truthy selector', ->
+    chain.array = [ fn1, fn2, fn3 ]
+    result = chain.select(-> true).remove()
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.equal result.results.length, 3, 'there should be three internal action results'
+    assert.strictEqual result.results[0].removed?[0], fn1
+    assert.strictEqual result.results[1].removed?[0], fn2
+    assert.strictEqual result.results[2].removed?[0], fn3
+
+  it 'should remove one function with specific selector', ->
+    chain.array = [ fn1, fn2, fn3 ]
+    selector = (fn, index) -> (fn is fn2)
+    result = chain.select(selector).remove()
+    assert.equal chain.array.length, 2, 'array should be one less'
+    assert.equal result.results.length, 1, 'there should be one internal action result'
+    assert.strictEqual result.results[0].removed?[0], fn2
+
+  it 'should remove two function with specific selector', ->
+    chain.array = [ fn1, fn2, (->), fn3, (->) ]
+    selector = (fn, index) -> (fn is fn2 or fn is fn3)
+    result = chain.select(selector).remove()
+    assert.equal chain.array.length, 3, 'array should be two less'
+    assert.equal result.results.length, 2, 'there should be two internal action results'
+    assert.strictEqual result.results[0].removed?[0], fn2
+
+
+  it 'should remove zero functions with falsey selector', ->
+    reason = 'the reason'
+    chain.array = [ fn1, fn2, fn3 ]
+    assert.equal chain.array.length, 3, 'array should start with 3'
+    result = chain.select(-> false).remove reason
+    assert.equal chain.array.length, 3, 'array should be unchanged'
+    assert.strictEqual result.removed, undefined, 'shouldnt be any removed'
+
+  it 'should remove all functions with truthy selector', ->
+    reason = 'the reason'
+    chain.array = [ fn1, fn2, fn3 ]
+    result = chain.select(-> true).remove reason
+    assert.equal chain.array.length, 0, 'array should be empty'
+    assert.equal result.results.length, 3, 'there should be three internal action results'
+    assert.strictEqual result.results[0].removed?[0], fn1
+    assert.strictEqual result.results[1].removed?[0], fn2
+    assert.strictEqual result.results[2].removed?[0], fn3
+    assert.equal result.results[0].reason, reason
+
+  it 'should remove one function with specific selector', ->
+    reason = 'the reason'
+    chain.array = [ fn1, fn2, fn3 ]
+    selector = (fn, index) -> (fn is fn2)
+    result = chain.select(selector).remove reason
+    assert.equal chain.array.length, 2, 'array should be one less'
+    assert.equal result.results.length, 1, 'there should be one internal action result'
+    assert.strictEqual result.results[0].removed?[0], fn2
+    assert.equal result.results[0].reason, reason
+
+  it 'should remove two function with specific selector', ->
+    reason = 'the reason'
+    chain.array = [ fn1, fn2, (->), fn3, (->) ]
+    selector = (fn, index) -> (fn is fn2 or fn is fn3)
+    result = chain.select(selector).remove reason
+    assert.equal chain.array.length, 3, 'array should be two less'
+    assert.equal result.results.length, 2, 'there should be two internal action results'
+    assert.strictEqual result.results[0].removed?[0], fn2
+    assert.equal result.results[0].reason, reason
 
 
 # 4. chain.clear()
@@ -736,7 +910,7 @@ describe 'test disable', ->
     selector = (fn, index) -> (fn is target and index is 1)
     chain.add fn1, target, fn3
     assert.equal chain.array.length, 3, 'should start with 3 functions'
-    chain.select(selector).disable()
+    result = chain.select(selector).disable()
     assert.equal chain.array.length, 3, 'should still have 3 functions'
     assert.equal target.options.disabled, true
     assert.equal chain.array[1].options.disabled, true
@@ -903,7 +1077,7 @@ describe 'test enable', ->
 
 
   it 'should select() a function and enable', ->
-    
+
     target = ->
     target.options = disabled:true
     selector = (fn, index) -> (fn is target and index is 1)
@@ -932,37 +1106,150 @@ describe 'test enable', ->
     assert.equal chain.array[1].options.disabled, undefined
     assert.equal chain.array[2].options.disabled, undefined
 
+# 8. select()
+
+describe 'test select', ->
+
+  chain = null
+
+  beforeEach 'create a chain', ->
+    chain = buildChain()
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select null
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select false
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select 'string'
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select 123
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select {}
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
+
+  it 'should error if `selector` isnt a function', ->
+
+    result = chain.select []
+
+    assert result.error, 'result should contain an error'
+    assert result.disable, 'result should contain disable'
+    assert result.enable, 'result should contain enable'
+    assert result.remove, 'result should contain remove'
+    assert result.affect, 'result should contain affect'
+    assert.equal result.error, 'Selector must be an index, id, or filter function'
+    error = result.error
+
+    assert.strictEqual result.disable().error, error
+    assert.strictEqual result.enable().error, error
+    assert.strictEqual result.remove().error, error
+    assert.strictEqual result.affect().error, error
 
 
+# 9. select().affect()
 
-  # TODO: Move these to testing for .select(...).remove()
-  # it 'should remove zero functions with falsey selector', ->
-  #   chain.array = [ fn1, fn2, fn3 ]
-  #   result = chain.clear -> false
-  #   assert.equal chain.array.length, 3, 'array should be unchanged'
-  #   assert.strictEqual result.removed.length, 0
-  #
-  # it 'should remove all functions from with truthy selector', ->
-  #   chain.array = [ fn1, fn2, fn3 ]
-  #   result = chain.clear -> true
-  #   assert.equal chain.array.length, 0, 'array should be empty'
-  #   assert.strictEqual result.removed.length, 3
-  #   assert.strictEqual result.removed?[0], fn1
-  #   assert.strictEqual result.removed?[1], fn2
-  #   assert.strictEqual result.removed?[2], fn3
-  #
-  #
-  # it 'should remove function from chain by id selector', ->
-  #   chain.array = [ fn1, fn2, fn3 ]
-  #   result = chain.clear (fn) -> fn?.options?.id is 'fn2'
-  #   assert.equal chain.array.length, 2, 'array should be one less'
-  #   assert.strictEqual result.removed.length, 1, 'should remove one function'
-  #   assert.strictEqual result.removed?[0], fn2
-  #
-  # it 'should remove functions from chain by two-id selector', ->
-  #   chain.array = [ fn1, fn2, fn3, (->) ]
-  #   result = chain.clear (fn) -> fn?.options?.id is 'fn2' or fn?.options?.id is 'fn3'
-  #   assert.equal chain.array.length, 2, 'array should be two less'
-  #   assert.strictEqual result.removed.length, 2, 'should remove two functions'
-  #   assert.strictEqual result.removed?[0], fn2
-  #   assert.strictEqual result.removed?[1], fn3
+describe 'test select', ->
+
+  fn1 = ->
+  fn1.options = id:'fn1'
+  fn2 = ->
+  fn2.options = id:'fn2'
+  fn3 = ->
+  fn3.options = id:'fn3'
+
+  chain = null
+
+  beforeEach ->
+    chain = buildChain()
+
+  it 'should call affector on selected function', ->
+    target = ->
+    target.options = id:'target'
+    chain.add fn1, fn2, target, fn3
+
+    selector = (fn) -> fn is target
+    selected = chain.select selector
+
+    returnValue = 'return value'
+    affector = (fn) ->
+      fn.options.labels ?= []
+      fn.options.labels.push 'affected'
+      return returnValue
+
+    result = selected.affect affector
+    
+    assert target.options.labels, 'should have created a labels array'
+    assert.equal target.options.labels?[0], 'affected'
+    assert.equal result?.results?[0], returnValue
