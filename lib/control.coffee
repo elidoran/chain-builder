@@ -19,11 +19,17 @@ module.exports = class Control
     # eliminate the pause info because we're no longer paused
     @paused = null
 
-    # let everyone know we're resuming now
-    @_chain.emit 'resume', this # TODO: Not sure what to include here
+    # when we resume, check for a fail() result.
+    unless @failed?
 
-    # begin executing again. this restarts the sync style execution with a return
-    result = @_execute()
+      # let everyone know we're resuming now
+      @_chain.emit 'resume', this # TODO: Not sure what to include here
+
+      # begin executing again. this restarts the sync style execution with a return
+      result = @_execute()
+
+    # okay, we failed, don't execute, result is false.
+    else result = false
 
     # once done executing, create the sync results and return them
     results = @_chain._finish result, this
@@ -42,20 +48,12 @@ module.exports = class Control
     (err, res) ->
 
       # if there's an error, then fail with both message and the Error
-      if err?
-        # not paused anymore
-        control.paused = null
-
-        # record the error as a fail
-        result = control.fail errorMessage, err
-
-        # we're done, so, finish up instead of calling resumer()
-        results = control._chain._finish result, control
+      if err? then control.fail errorMessage, err
 
       # otherwise, store the result into the context with the key, then resume.
-      else
-        resumer.control._context[resultKey] = res
-        resumer()
+      else control._context[resultKey] = res
+
+      resumer()
 
 
   # more readable for pipeline style to call next() and then do more work after it.
