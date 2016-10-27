@@ -65,7 +65,7 @@ module.exports = class Chain extends require('events').EventEmitter
   #  chain.remove 3
   #  chain.remove 'some-id'
   #  chain.remove fn1
-  remove: (which) ->
+  remove: (which, reason) ->
 
     # find it based on the selector. may return an error
     index = @_findIndex which
@@ -75,13 +75,13 @@ module.exports = class Chain extends require('events').EventEmitter
 
     # use sub-operation so the select() stuff can also use the sub-operation.
     # select() one passes the function first and then the index
-    @_remove null, index
+    @_remove null, index, reason
 
   # used by both chain.remove() and chain.select(...).remove()
-  _remove: (_, index) ->
+  _remove: (_, index, reason = true) ->
 
     # by default, return an empty object because we didn't remove anything
-    result = result:false
+    result = result:false, reason:reason
 
     # if we found it tho
     if index > -1
@@ -283,18 +283,53 @@ module.exports = class Chain extends require('events').EventEmitter
     chain = this
 
     # create two spots in args for our 'fn' and 'index'
+    # (index 0, delete zero, add in two '')
     args.splice 0, 0, '', ''
 
-    # for each function in the array, if `selector` returns true
-    for fn,index in chain.array when selector fn, index
-      # put both of them in there as the first two args in the slots we created above
-      args[0] = fn
-      args[1] = index
-      # call the action with the `chain` as the `this` and our args
-      action.apply chain, args
+    # when doing the remove action on a function it messes up the `for fn,index`
+    # iteration loop.
+    # So, i pulled index out separately, and, I use array length changes to
+    # affect the index value. then it doesn't go up one when we just removed
+    # a function. and, it would go up if we added one, tho, I don't have an
+    # add action as part of select() stuff.
 
-    # all done
-    return
+    # length at the start of the first operation, and, index starts at zero.
+    length = chain.array.length
+    index = 0
+
+    # let's remember the results of each action
+    results = []
+
+    for fn in chain.array
+
+      # apply the action to the function only if the selector say so
+      if selector fn, index
+        # put both of them in there as the first two args in the slots we created above
+        args[0] = fn
+        args[1] = index
+
+        # call the action with the `chain` as the `this` and our args
+        result = action.apply chain, args
+
+        # compare length before the action and after the action
+        diff = chain.array.length - length
+
+        # apply the difference to the index.
+        # when we remove one it's -1 so we reduce the index.
+        index += diff
+
+        # and then update the length
+        length = chain.array.length
+
+        # gather each action's results
+        results.push result
+
+      # we do the normal increment by one for the loop.
+      # Note: this must happen every loop iteration
+      index++
+
+    # all done  TODO: how to gather results of action to return here...
+    return result:true, results:results
 
   # create a selector function capable of selecting the desired member functions
   # and then apply the utility functions to them.
@@ -324,7 +359,8 @@ module.exports = class Chain extends require('events').EventEmitter
       # for it, return the expected properties which call the function which
       # provides the error result.
       return ops =
-        error  : error
+        selector: selector
+        error  : error.error
         disable: returnError
         enable : returnError
         remove : returnError
@@ -370,6 +406,8 @@ module.exports = class Chain extends require('events').EventEmitter
     # if they called control.stop() or control.fail() then include that info
     results.stopped = control.stopped if control.stopped?
     results.failed  = control.failed  if control.failed?
+    # also include functions removed during this execution run by `control`
+    results.removed = control.removed if control.removed?
 
     # call the done function if one exists
     control._done? result.error, results
