@@ -8,48 +8,265 @@ Manage an array of functions and execute them in a series with a variety of flow
 Some of the features:
 
 1. "chain of command" - call functions in series
-2. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function as input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
-3. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
-4. accepts a `done` callback and sends the error or result to it
-5. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
-6. can *stop* the chain early as a success; accepts a `reason`
-7. can *fail* the chain execution as an error; accepts a `reason`
-8. the context provided to each function is also the *this*, unless overridden via an option
-9. the *this* can be overridden per function via an options object on the function (better than bind because it uses a single `call()` instead of two)
-10. can override the context used by the next function (which can choose to pass that one on, or, allow the default context to be restored), and, can override the default context used by all future functions and is returned in the final result.
-11. is an *EventEmitter* with events for: start, pause, resume, stop, fail, add, remove, done.
+2. the simplest use case is still simple: supply an array of functions, and they'll be called in sequence.
+3. complex things are also simple such as providing your own context or altering it during an execution, overriding the `this` without using `bind()`, and more.
+4. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function as input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
+5. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
+6. accepts a `done` callback and sends the error or result to it
+7. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
+8. can *stop* the chain early as a success; accepts a `reason`
+9. can *fail* the chain execution as an error; accepts a `reason`
+10. the context provided to each function is also the *this*, unless overridden via an option
+11. the *this* can be overridden per function via an options object on the function (better than bind because it uses a single `call()` instead of two)
+12. can override the context used by the next function (which can choose to pass that one on, or, allow the default context to be restored), and, can override the default context used by all future functions and is returned in the final result.
+13. can `disable()` and `enable()` the whole chain, or a single function by its index/id/self, or a selection of functions chosen by a function you provide.
+14. can `remove()` a function by its index/id/self, or using the `select()` function, or via `control.remove()` during a chain execution.
+15. is an *EventEmitter* with events for: start, pause, resume, stop, fail, add, remove, disable, enable, and done.
 
 ## Install
 
     npm install chain-builder --save
 
 
-## Usage: Simple
+## Usage: Basic
+
 [More Usage](#usage)
 
-```coffeescript
-buildChain = require 'chain-builder'
+Here is an extremely basic example to show the basic parts perform.
 
-# for simple chains there's no need to use either function params, just *this*
-fn1 = -> this.message += ' there'  # message = 'hello there'
-fn2 = -> this.message += ', Bob'   # message = 'hello there, Bob'
-fn3 = -> console.log this.message  # writes full message to console
+```javascript
+var buildChain = require('chain-builder')
+  , chain = buildChain();
 
-chain = buildChain()
-chain.add fn1, fn2, fn3
-# could already be in an array like:
-# chain.add [fn1, fn2, fn3]
+// you have a function
+function fn1() { console.log('simple'); }
 
-# a mutable context object given to each fn in the chain
-context = message:'hello'
+// add it. (You can supply it to `buildChain()` as well)
+chain.add(fn1);
 
-result = chain.run context:context
-# prints 'hello there, Bob'
-# result has information depending on what occurred, this simple one is: {
-#   result:true
-#   context: { message:'hello there, Bob' }
-# }
+// run the chain with default options which creates an empty context
+var results = chain.run();
+
+// the results object is:
+// results = {
+//   result: true    - means it was a success. no error. no fail().
+//   context: {}     - the default context is an empty object.
+// }
 ```
+
+## Usage: Simple
+
+Here I show use of the most commonly used features:
+
+1. accessing the `context` via function param or `this`
+2. reporting an error from inside a function
+3. reviewing the final results
+
+```javascript
+// let's make our first function a guardian. it'll check for something and
+// error if it's missing. For that, it needs the first arg, the `control`.
+function guard(control) {
+  // if the 'message' property is missing from the context object
+  if (!this.message) {
+    // return a false result with this error message
+    control.fail('missing message');
+  }
+}
+
+// for simpler functions there's no need to use either function params, just *this*
+function fn1() {
+  // the initial `message` value is provided to `chain.run()` below
+  this.message += ' there'  // makes `message` = 'Hello there'
+}
+
+function fn2() {
+  this.message += ', Bob'   // makes message = 'Hello there, Bob'
+}
+
+function fn3() {
+  // writes full message to console
+  console.log(this.message);
+}
+
+var chain = buildChain(fn1, fn2, fn3);
+// OR: add them after a chain is created
+chain.add(fn1, fn2, fn3);
+// OR: add them as an array
+chain.add([ fn1, fn2, fn3 ]);
+
+    // a mutable context object given to each fn in the chain
+var context = { message: 'Hello' }
+    // the options provided to run() may contain a context object to use
+  , runOptions = { context: context }
+    // run the chain with our context
+  , result = chain.run(runOptions);
+
+// what it will do:
+// 1. check the existence of the `message` property in the context
+// 2. alter the context's `message` property in fn1 and fn2
+// 3. print 'hello there, Bob' in function fn3
+// 4. return a result object which contains:
+// result = {
+//   result:true
+//   , context: { message:'Hello there, Bob' }
+//   , chain: ... - the chain used to run it
+// }
+
+// now let's cause a fail by not providing a message property.
+// we'll reuse the above stuff, so delete the property.
+delete context.message;
+
+// and call it again
+result = chain.run(runOptions);
+
+// what it will do:
+// 1. 'guard' will check for `message` in context and find it missing
+// 2. it will then call `control.fail()` with a reason
+// 3. chain returns a result object which contains:
+result = {
+  result:false  // fail() causes a false result
+  , context: {} // the context which we provided and didn't change
+  , failed: {   // info about the fail() call
+      reason: 'missing message' // the message given to fail()
+      , index: 0  // the index of the chain function which called fail()
+      , fn: ...   // the guard function which called control.fail()
+  }
+  , chain: /* the chain used to run it */
+}
+```
+
+
+## Usage: Complex
+
+Show many advanced features:
+
+1. add some functions via the chain builder function
+2. add an array of functions from a module and then remove one of them
+3. add another group of functions and then remove multiple of them with a `select()` based on "labels" in their function options
+4. disable a function so it's skipped until we want it to join in
+5. provide a function which has its own special `this` configured, without using `bind()` (for a single function call, and the avoidance of `bind()`)
+6. use `control` *inside* a function to remove that function from the chain because it only wants to run once
+7. `pause()` the execution at one point to show making things asynchronous. also shows using both `resume()` and `resume.callback()` styles.
+8. one function which does `control.fail()` when it can't do its work
+9. one function which does `control.stop()` when it believes success has been achieved
+10. one function does work both when it is first called, and, after the subsequent functions in the chain have executed
+11. provide a custom `context` to the run
+12. show a "temporary override" of the context for the next function
+13. show a "permanent override" of the context
+
+```javascript
+var buildChain = require('chain-builder')
+  , localFunctionsArray = require('./some/lib/fn/provider')
+  , chain = buildChain(localFunctionsArray);
+
+chain.add(require('some-module-with-fns'));
+// one of those functions has an id we can use to remove it:
+// function someFn() {}
+// someFn.options = { id: 'the-one-we-dont-want' }
+chain.remove('the-one-we-dont-want');
+
+chain.add(require('another-module'));
+
+// imagine the select function is:
+// function selectCacheFunctions(fn, index) {
+//   // if it has a 'labels' array in its function options
+//   var hasArray = fn.options && fn.options.labels;
+//   // if it has the array and the array has 'cache' in it
+//   // then we want to "select" this one, so, return true.
+//   return hasArray && (fn.options.labels.indexOf('cache') > -1);
+// }
+// it's possible to store the result and reuse it.
+var selectCacheFns = chain.select(require('./select-cache-fns'));
+// use it now to remove the matching functions,
+// and optionally give a reason for removal.
+selectCacheFns.remove('We are using a different caching method');
+
+// maybe we don't want that one right now while running some initial warmups.
+// we'll enable it later when real use begins.
+chain.disable('monitor');
+
+// let's say we had a function written to be run on a different object so
+// normally we would `bind()` it. Bind causes two function calls. So, instead,
+// `chain-builder` allows you to specify what to bind it to as an option on it.
+// then, it's used when chain-builder calls it. so, one function call.
+var notBoundFn = someObject.someFunction;
+notBoundFn.options = { this: someObject };
+
+function tempOverride(control) {
+  // create some object for the next one to use instead
+  var contextForNextFunction = {};
+  // tell control to use it *only once* (second arg defaults to false)
+  control.context(contextForNextFunction);
+}
+
+function iRunOnce(control) {
+  // this function wants to do something only the first time it's run.
+  // then remove itself forever. maybe it does some deferred init...
+  control.remove(); // optionally provide a reason
+}
+
+function iPauseForAsync(control, context) {
+  // pause it by getting the resume function.
+  // optionally provide a reason it's paused.
+  var resume = control.pause('wait for file read')
+
+  // optionally, create a standard callback for use with readFile
+    , callback = resume.callback('read file failed', 'theFileContent');
+
+  // do something async, use our handy callback
+  fs.readFile('some/path/to/a/file.txt', 'utf8', callback);
+
+  // or, write it out yourself and call fail() or resume() directly
+  fs.readFile('some/path/to/a/file.txt', 'utf8', function(err, content) {
+    if (err) {
+      control.fail('read file failed', err);
+    } else {
+      // second param, `context`, comes in handy now instead of `this`
+      context.theFileContent = content;
+    }
+  });
+
+  // or, do something scheduled like:
+  setTimeout resume, 10*1000
+}
+
+function iStopSometimes(control, context) {
+  if (this.theFileContent === 'we did it already') {
+    control.stop('we already have what we need');
+  } else {
+    // permanently replace the `context` with a new empty one
+    control.context({}, true);
+  }
+}
+
+function iRetrySometimes(control) {
+  // let the rest of the chain do its work, we'll do something on its way back
+  // to provide a new context as well, use control.context(..., true) seen above.
+  var result = control.next();
+
+  // now we have the result of the calls after this function.
+  // if there was something we can retry, then call things again.
+  if (result.hasSomeRetryableProblem) {
+    result = control.next();
+    // could loop on this,
+    // could pause each time and wait for outside influence...
+  }
+}
+
+var context = {}
+  , runOptions = { context: context };
+
+
+
+var result = chain.run(runOptions);
+
+// result contains:
+result = {
+
+}
+
+```
+
 
 ## Execution Control
 
@@ -499,19 +716,32 @@ console.log 'back from chain.run()'
 
 ## API
 
-TODO: Complete API specifying each function available
+### API: exported builder function
 
-### API: buildChain()
+Options:
+
+1. array
+2. contextBase - used in default context builder
+3. buildContext - overrides context builder
+
+## API: Chain
+
+### API: chain.run(options:Object[, done:Function])
 
 ### API: chain.add(fn[, fn]*)
 
 May also provide an array as an argument.
 
-### API: chain.remove(fn[, fn]*)
+### API: chain.remove(index:number | id:string)
 
-May also provide an array as an argument.
+### API: chain.disable(index:number | id:string | function)
 
-### API: chain.run(options:Object[, done:Function])
+### API: chain.enable(index:number | id:string | function)
+
+### API: chain.select(function)
+
+
+## API: Control
 
 ### API: control.next()
 
@@ -522,6 +752,13 @@ May also provide an array as an argument.
 ### API: control.stop(reason:String)
 
 ### API: control.fail(reason:String)
+
+### API: control.disable()
+
+### API: control.enable()
+
+### API: control.remove()
+
 
 ### API: Events
 
@@ -534,7 +771,9 @@ The chain emits these events:
 5. resume: when the `resume` function, returned from `control.pause()`, is called
 6. stop: when `control.stop()` is called
 7. fail: when `control.fail()` is called
-8. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
+8. disable: when `control.disable()` or `chain.disable()` is called
+9. enable: when `chain.enable()` is called *and* its target actually needed enabling
+10. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
 
 
 # JavaScript Style Usage
@@ -550,11 +789,11 @@ TODO: complete all JS code examples for each CS example above.
 ```javascript
 buildChain = require('chain-builder');
 
-fn1 = function() { this.message += ' there'; }; // message = 'hello there'
-// context = this  so, the below is equivalent
-//fn1 function(control, context) { context.message += ' there'; };
-fn2 = function() { this.message += ', Bob'; };  // message = 'hello there, Bob'
-fn3 = function() { console.log(this.message); };// writes full message to console
+function fn1() { this.message += ' there'; }; // message = 'hello there'
+// context = this,  so, the below is equivalent
+// function fn1(control, context) { context.message += ' there'; };
+function fn2() { this.message += ', Bob'; };  // message = 'hello there, Bob'
+function fn3() { console.log(this.message); };// writes full message to console
 
 chain = buildChain();
 chain.add(fn1, fn2, fn2);
