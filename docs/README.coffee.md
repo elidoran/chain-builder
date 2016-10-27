@@ -32,7 +32,7 @@ npm install chain-builder --save
 # Table of Contents (CS)
 
 [[JS5]](http://github.com/elidoran/chain-builder/blob/master/README.md)
-[[JS6]](http://github.com/elidoran/chain-builder/blob/master/README-JS6.md)
+[[JS6]](http://github.com/elidoran/chain-builder/blob/master/docs/README-JS6.md)
 
 A. Usage
 
@@ -66,26 +66,27 @@ E. [API](#api)
   1. [Exported Builder Function](#api-exported-builder-function)
   2. [Chain](#api-chain)
 
-    a.  [chain.run()](#api-chain-run)
-    b.  [chain.add()](#api-chain-add)
-    c.  [chain.remove()](#api-chain-remove)
-    d.  [chain.disable()](#api-chain-disable)
-    e.  [chain.enable()](#api-chain-enable)
-    f.  [chain.select()](#api-chain-select)
+    * [chain.run()](#api-chain-run)
+    * [chain.add()](#api-chain-add)
+    * [chain.remove()](#api-chain-remove)
+    * [chain.disable()](#api-chain-disable)
+    * [chain.enable()](#api-chain-enable)
+    * [chain.select()](#api-chain-select)
 
   3. [Control](#api-control)
 
-    a. [control.next()](#api-control-next)
-    b. [control.context()](#api-control-context)
-    c. [control.pause()](#api-control-pause)
-    d. [control.stop()](#api-control-stop)
-    e. [control.fail()](#api-control-fail)
-    f. [control.disable()](#api-control-disable)
-    g. [control.remove()](#api-control-remove)
-    h. [resume()](#api-resume)
-    i. [resume.callback()](#api-resume-callback)
+    * [control.next()](#api-control-next)
+    * [control.context()](#api-control-context)
+    * [control.pause()](#api-control-pause)
+    * [control.stop()](#api-control-stop)
+    * [control.fail()](#api-control-fail)
+    * [control.disable()](#api-control-disable)
+    * [control.remove()](#api-control-remove)
+    * [resume()](#api-resume)
+    * [resume.callback()](#api-resume-callback)
 
 F. [MIT License](#mit-license)
+
 
 ## Usage: Basic
 
@@ -108,7 +109,7 @@ Here is an extremely basic example to show the basic parts working together.
       result : true  # means it was a success. no error. no fail().
       context: {}    # the default context is an empty object.
       chain  :       # the chain ...
-    }
+
 
 ## Usage: Simple
 
@@ -119,8 +120,7 @@ The most commonly used features:
 3. reviewing the final results
 
 
-let's make our first function a guardian. it'll check for something and
-error if it's missing. For that, it needs the first arg, the `control`.
+Let's make our first function a guardian. it'll check for something and error if it's missing. For that, it needs the first arg, the `control`.
 
     guard = (control) ->
       # if the 'message' property is missing from the context object
@@ -128,8 +128,7 @@ error if it's missing. For that, it needs the first arg, the `control`.
         # return a false result with this error message
         control.fail 'missing message'
 
-for simpler functions there's no need to use either function
-params, use `this`.
+For simpler functions there's no need to use either function params, use `this`.
 
     fn1 = () ->
       # the initial `message` value is provided to `chain.run()` below
@@ -155,40 +154,39 @@ params, use `this`.
     # run the chain with our context
     result = chain.run runOptions
 
-what it will do:
+What it will do:
 
 1. check the existence of the `message` property in the context
 2. alter the context's `message` property in fn1 and fn2
 3. print 'hello there, Bob' in function fn3
 4. return a result object which contains:
 
+
     result =
       result : true
       context: message:'Hello there, Bob'
       chain  : # ... the chain used to run it
 
-    # now let's cause a fail by not providing a message property.
-    # we'll reuse the above stuff, so delete the property.
-    delete context.message
+Now, let's cause a fail by not providing a message property. We'll reuse the above stuff, so delete the property, then call the chain again.
 
-    # and call it again
+    delete context.message
     result = chain.run runOptions
 
-what it will do:
+What it will do:
 
 1. 'guard' will check for `message` in context and find it missing
 2. it will then call `control.fail()` with a reason
 3. chain returns a result object which contains:
 
+
     result =
       result : false  # fail() causes a false result
-      context: {} # the context which we provided and didn't change
-      failed :    # info about the fail() call
+      context: {}     # the context which we provided and didn't change
+      failed :        # info about the fail() call
           reason: 'missing message' # the message given to fail()
-          index : 0  # the index of the chain function which called fail()
-          fn    : ...   # the guard function which called control.fail()
-      }
-      chain: # the chain used to run it
+          index : 0   # the index of the chain function which called fail()
+          fn    : ... # the guard function which called control.fail()
+      chain  :        # the chain used to run it
 
 
 ## Usage: Complex
