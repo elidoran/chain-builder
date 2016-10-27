@@ -73,6 +73,11 @@ module.exports = class Control
         # remove the function and remember it for an emit
         fn = @_array.splice @_index, 1
 
+        # let's store the removal into context (the eventual return result)
+        @removed ?= []
+        # unwrap it from the array splice() puts it in
+        @removed.push fn[0]
+
         # emit the removal
         @_chain.emit 'remove', result:true, removed:fn, reason:reason
 
