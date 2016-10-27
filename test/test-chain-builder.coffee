@@ -450,8 +450,8 @@ describe 'test chain.clear()', ->
 # 5. chain.run()
 describe 'test running chain', ->
   ran  = (control, context) -> context.ran = true
-  stop = (control, context) -> context.stop = true ; control.stop 'testing'
-  fail = (control, context) -> context.fail = true ; control.fail 'testing'
+  stop = ((control, context) -> context.stop = true ; control.stop 'testing')
+  fail = ((control, context) -> context.fail = true ; control.fail 'testing')
   pause = (control, context) ->
     context.pause = true
     context.paused = true
@@ -710,6 +710,72 @@ describe 'test running chain', ->
         assert.equal result?.context?.paused, false, 'should have called last fn and set paused=false'
         assert.deepEqual syncResult?.paused, reason:'testing', index:0, fn:pause
         done()
+
+
+    it 'with resume callback defaults and success', (done) ->
+
+      # empty the array for this test
+      chain.array = []
+
+      # add in our resumer function
+      chain.add (control, context) ->
+        resume = control.pause 'testing resume.callback'
+        callback = resume.callback()
+        # call it later...
+        process.nextTick -> callback null, 'result'
+
+      # run with default context, we can check it from result
+      result = chain.run done:(err, res) ->
+        assert.equal err, undefined, 'shouldnt be an error'
+        assert.equal res?.context?.result, 'result'
+
+        done()
+
+    it 'with resume callback key name and success', (done) ->
+
+      # empty the array for this test
+      chain.array = []
+
+      # add in our resumer function
+      chain.add (control, context) ->
+        resume = control.pause 'testing resume.callback'
+        callback = resume.callback null, 'mykey'
+        # call it later...
+        process.nextTick -> callback null, 'value'
+
+      # run with default context, we can check it from result
+      result = chain.run done:(err, res) ->
+        assert.equal err, undefined, 'shouldnt be an error'
+        assert.equal res?.context?.mykey, 'value'
+
+        done()
+
+    it 'with resume callback error message and failure', (done) ->
+
+      # empty the array for this test
+      chain.array = []
+
+      failer = (control, context) ->
+        resume = control.pause 'testing resume.callback'
+        callback = resume.callback 'error!', 'mykey'
+        # call it later...
+        process.nextTick -> callback new Error 'some Error'
+
+      # add in our resumer function
+      chain.add failer
+
+      # run with default context, we can check it from result
+      result = chain.run done:(err, res) ->
+        console.log 'err:',err
+        console.log 'res:',res
+        assert.equal err.reason, 'error!'
+        assert.equal err.index, 0, 'should have failing function at 0'
+        assert.strictEqual err.fn, failer
+        assert.equal err.error.message, 'some Error', 'should have message from Error instance'
+        assert.strictEqual res?.context?.mykey, undefined
+
+        done()
+
 
 
 
@@ -1249,7 +1315,7 @@ describe 'test select', ->
       return returnValue
 
     result = selected.affect affector
-    
+
     assert target.options.labels, 'should have created a labels array'
     assert.equal target.options.labels?[0], 'affected'
     assert.equal result?.results?[0], returnValue
