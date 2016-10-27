@@ -410,10 +410,11 @@ module.exports = class Chain extends require('events').EventEmitter
     results.removed = control.removed if control.removed?
 
     # call the done function if one exists
-    control._done? result.error, results
+    error = result.error ? results.failed
+    control._done? error, results
 
     # emit done with the same info
-    @emit 'done', result.error, results
+    @emit 'done', error, results
 
     # pass back the `results` we built
     return results
