@@ -23,10 +23,55 @@ Some of the features:
 14. can `remove()` a function by its index/id/self, or using the `select()` function, or via `control.remove()` during a chain execution.
 15. is an *EventEmitter* with events for: start, pause, resume, stop, fail, add, remove, disable, enable, and done.
 
-## Install
+# Install
 
     npm install chain-builder --save
 
+
+# Table of Contents (JS5)
+
+[JS6](http://github.com/elidoran/chain-builder/blob/master/README-JS6.md)
+[CS](http://github.com/elidoran/chain-builder/blob/master/README.coffee.md)
+
+A. Usage
+    1. [Basic](#usage-basic)
+    2. [Simple](#usage-simple)
+    3. [Complex](#usage-complex)
+B. Executing a Chain
+    1. [Control](#execution-control)
+    2. [Flow Styles](#execution-flow-styles)
+    3. [Context or This?](#use-context-or-this)
+C. [Examples](#examples)
+    1. [Stopping Chain](#stopping-chain)
+    2. [Pass on a Value via Context](#use-context-to-pass-on-value)
+    3. [Thrown Errors](#thrown-error)
+    4. [Pipeline/Filter](#pipelinefilter-style)
+    5. [Asynchronous](#asynchronous)
+D. [Advanced Contexts](#advanced-contexts)
+    1. [Two Contexts](#the-two-contexts)
+    2. [How to specify the this context](#how-to-specify-the-this-context)
+    3. [Why not use bind()?](#why-not-use-bind)
+    4. [Control the Shared Context](#how-to-control-the-shared-context)
+E. [API](#api)
+    1. [Exported Builder Function](#api-exported-builder-function)
+    2. [Chain](#api-chain)
+        a. [chain.run()](#api-chain-run)
+        b. [chain.add()](#api-chain-add)
+        c. [chain.remove()](#api-chain-remove)
+        d. [chain.disable()](#api-chain-disable)
+        e. [chain.enable()](#api-chain-enable)
+        f. [chain.select()](#api-chain-select)
+    3. [Control](#api-control)
+        a. [control.next()](#api-control-next)
+        b. [control.context()](#api-control-context)
+        c. [control.pause()](#api-control-pause)
+        d. [control.stop()](#api-control-stop)
+        e. [control.fail()](#api-control-fail)
+        f. [control.disable()](#api-control-disable)
+        g. [control.remove()](#api-control-remove)
+        h. [resume()](#api-resume)
+        i. [resume.callback()](#api-resume-callback)
+F. [MIT License](#mit-license)
 
 ## Usage: Basic
 
@@ -234,7 +279,7 @@ function iPauseForAsync(control, context) {
   });
 
   // or, do something scheduled like:
-  setTimeout resume, 10*1000
+  setTimeout(resume, 10*1000);
 }
 
 function iStopSometimes(control, context) {
@@ -260,18 +305,38 @@ function iRetrySometimes(control) {
   }
 }
 
+// this will be used as the context except when it's overridden,
+// both temporarily and permanently.
+// it will be returned in the result unless overridden permanently.
+// this could be a class instance and have functions on it as well.
 var context = {}
+// the run() accepts options included the `context` we just created
   , runOptions = { context: context };
 
+// Or, we can affect the context object which is built by default using
+// Object.create(base, props);
+var runOptions = {
+  base: {
+    // some constant
+    config: 'value'
+    // some helper function you want your functions to have access to
+    // via this.helperFn() or context.helperFn()
+    , helperFn: function(input) { return 'something'; }
+ }
+};
 
-
+// run it with our options
 var result = chain.run(runOptions);
 
 // result contains:
 result = {
-
+  result: true
+  , context: /* the context we provided */
+  , chain: /* the chain... */
 }
 
+// lastly, remember all the events emitted from chain allow
+// configuring lots of listener based operations.
 ```
 
 
@@ -303,6 +368,8 @@ Sometimes it's helpful to end a chain early because its work is complete without
 
 It's possible to end the chain because an error has occurred with `control.fail()`. It will return a result back through the synchronous executions. The *fail* function accepts a `reason` value which will be part of the returned results.
 
+I've added an extra convenience to the `resume` function provided by `pause()`. It now has the ability to create a callback function with the standard params: `(error, result)`. It can be provided to the usual asynchronous functions as the callback and it will handle calling `control.fail()` if an error occurs or storing the result and calling `resume()`. By default, the callback's error message is "ERROR" and the default key to store the result value into the context is `result`. Override them by providing them as args to `resume.callback(errorMessage, resultKey)`.
+
 
 ## Use Context or This ?
 
@@ -315,14 +382,6 @@ You may choose to use either. It is up to your own preferred style. It is possib
 2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
 3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
 4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
-
-## Usage
-
-[JavaScript Usage Example](#javascript-style-usage)
-
-### Simple
-
-This is already above at [Usage: Simple](#usage-simple)
 
 
 ### Stopping Chain
@@ -349,11 +408,12 @@ fn3 = -> console.log 'I wont run'
 
 chain = buildChain array:[ fn1, fn2, fn3 ]
 
-result = chain.run done:false
+result = chain.run context: {done:false}
 # fn3 will never run.
 # result is: {
 #   result: true
-#   stopped:{ reason:'we are done', index:1, fn:fn2}
+#   stopped:{ reason:'we are done', index:1, fn:fn2 }
+#   chain: # the chain
 # }
 ```
 
@@ -394,7 +454,7 @@ result = chain.run()   # will use an empty object as context
 # fn2 will, uh, *cheer*
 ```
 
-### Throw Error
+### Thrown Error
 
 What if a function throws an error?
 
@@ -414,6 +474,133 @@ result = chain.run()
 #   error: [Error: my bad] # value is the Error instance's string representation
 # }
 ```
+
+
+## Pipeline/Filter Style
+
+This style allows performing work after the later functions return. It relies on synchronous execution.
+
+Here is an example:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = (control) ->
+  # provide some value into the context from some operation
+  this.value = doSomeOperation()
+
+  # call the later functions which will do something with the value
+  result = control.next()
+
+  # check for an error before doing more work
+  unless result?.error?
+
+    # do something after the rest of the chain has run
+    this.anotherValue = someOtherOperation this.valueFromLaterFunctions
+
+  # then let the function return the result it received
+  # Note, this can be changed as well, or, not returned at all.
+  return result
+
+fn2 = () -> this.valueFromLaterFunctions = someOperationOfItsOwn()
+
+chain = buildChain array:[fn1, fn2]
+result = chain.run()
+result = # {
+#   value: 'something'                        <-- fn1 put this into context
+#   valueFromLaterFunctions: 'something more' <-- fn2 put this into context
+#   anotherValue: 'something else'            <-- fn1 did this *after* fn2 ran
+# }
+```
+
+
+## Asynchronous
+
+Although the above examples show synchronous execution it is possible to run a chain asynchronously using the `control.pause()` function.
+
+An example:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = -> console.log this.message1
+
+fn2 = (control, context) ->
+  console.log this.message2
+  resume = control.pause 'just because'  # returns a function to call to resume execution
+  setTimeout resume, 1000 # schedule resume in a second
+  return # return nothing
+
+fn3 = () -> console.log this.message3
+
+chain = buildChain array:[fn1, fn2, fn3]
+result = chain.run context:
+  message1: 'in fn1'
+  message2: 'in fn2 and pausing'
+  message3: 'resumed and in fn3'
+
+result = # { returned when chain is paused
+#   paused: { reason: 'just because', index:1, fn:fn2 }
+# }
+
+# this will be printed before the chain is resumed and fn3 is run
+console.log 'back from chain.run()'
+
+# the console will print:
+#   in fn1
+#   in fn2 and pausing
+#   back from chain.run()
+#   resumed and in fn3
+```
+
+If your code calls the `resume` function then it will receive the final result usually returned by `chain.run()`.
+
+Using `setTimeout()` and other similar functions will make extra work to get that. So, you may specify a `done` callback to `chain.run()` to receive the final results, or the error, when a chain run completes.
+
+Here's an example:
+
+```coffeescript
+buildChain = require 'chain-builder'
+
+fn1 = -> console.log this.message1
+
+fn2 = (control, context) ->
+  console.log this.message2
+  resume = control.pause 'just because'  # returns a function to call to resume execution
+  setTimeout resume, 1000 # schedule resume in a second
+  return # return nothing
+
+fn3 = () -> console.log this.message3
+
+chain = buildChain array:[fn1, fn2, fn3]
+
+# specify a done callback as part of the options object which will be run when
+# the chain run is finished
+context =
+  message1: 'in fn1'
+  message2: 'in fn2 and pausing'
+  message3: 'resumed and in fn3'
+
+result = chain.run context:context, done:(error, results) ->
+  # the results object is the same as what chain.run() returns when synchronous
+  console.log 'in done'
+
+result = # { returned when chain is paused
+#   paused: { reason: 'just because', index:1, fn:fn2 }
+# }
+
+# this will be printed before the chain is resumed and fn3 is run, and,
+# before the done callback is called, of course
+console.log 'back from chain.run()'
+
+# the console will print:
+#   in fn1
+#   in fn2 and pausing
+#   back from chain.run()
+#   resumed and in fn3
+#   in done
+```
+
 
 ## Advanced Contexts
 
@@ -593,131 +780,6 @@ overrideContext = # {  <-- was in final result, contains fn's after the override
   #     fn4 : 'this, context'
   #     fn5 : 'this, context'
 # }
-```
-
-## Usage: Pipeline/Filter Style
-
-This style allows performing work after the later functions return. It relies on synchronous execution.
-
-Here is an example:
-
-```coffeescript
-buildChain = require 'chain-builder'
-
-fn1 = (control) ->
-  # provide some value into the context from some operation
-  this.value = doSomeOperation()
-
-  # call the later functions which will do something with the value
-  result = control.next()
-
-  # check for an error before doing more work
-  unless result?.error?
-
-    # do something after the rest of the chain has run
-    this.anotherValue = someOtherOperation this.valueFromLaterFunctions
-
-  # then let the function return the result it received
-  # Note, this can be changed as well, or, not returned at all.
-  return result
-
-fn2 = () -> this.valueFromLaterFunctions = someOperationOfItsOwn()
-
-chain = buildChain array:[fn1, fn2]
-result = chain.run()
-result = # {
-#   value: 'something'                        <-- fn1 put this into context
-#   valueFromLaterFunctions: 'something more' <-- fn2 put this into context
-#   anotherValue: 'something else'            <-- fn1 did this *after* fn2 ran
-# }
-```
-
-
-## Usage: Asynchronous
-
-Although the above examples show synchronous execution it is possible to run a chain asynchronously using the `control.pause()` function.
-
-An example:
-
-```coffeescript
-buildChain = require 'chain-builder'
-
-fn1 = -> console.log this.message1
-
-fn2 = (control, context) ->
-  console.log this.message2
-  resume = control.pause 'just because'  # returns a function to call to resume execution
-  setTimeout resume, 1000 # schedule resume in a second
-  return # return nothing
-
-fn3 = () -> console.log this.message3
-
-chain = buildChain array:[fn1, fn2, fn3]
-result = chain.run context:
-  message1: 'in fn1'
-  message2: 'in fn2 and pausing'
-  message3: 'resumed and in fn3'
-
-result = # { returned when chain is paused
-#   paused: { reason: 'just because', index:1, fn:fn2 }
-# }
-
-# this will be printed before the chain is resumed and fn3 is run
-console.log 'back from chain.run()'
-
-# the console will print:
-#   in fn1
-#   in fn2 and pausing
-#   back from chain.run()
-#   resumed and in fn3
-```
-
-If your code calls the `resume` function then it will receive the final result usually returned by `chain.run()`.
-
-Using `setTimeout()` and other similar functions will make extra work to get that. So, you may specify a `done` callback to `chain.run()` to receive the final results, or the error, when a chain run completes.
-
-Here's an example:
-
-```coffeescript
-buildChain = require 'chain-builder'
-
-fn1 = -> console.log this.message1
-
-fn2 = (control, context) ->
-  console.log this.message2
-  resume = control.pause 'just because'  # returns a function to call to resume execution
-  setTimeout resume, 1000 # schedule resume in a second
-  return # return nothing
-
-fn3 = () -> console.log this.message3
-
-chain = buildChain array:[fn1, fn2, fn3]
-
-# specify a done callback as part of the options object which will be run when
-# the chain run is finished
-context =
-  message1: 'in fn1'
-  message2: 'in fn2 and pausing'
-  message3: 'resumed and in fn3'
-
-result = chain.run context:context, done:(error, results) ->
-  # the results object is the same as what chain.run() returns when synchronous
-  console.log 'in done'
-
-result = # { returned when chain is paused
-#   paused: { reason: 'just because', index:1, fn:fn2 }
-# }
-
-# this will be printed before the chain is resumed and fn3 is run, and,
-# before the done callback is called, of course
-console.log 'back from chain.run()'
-
-# the console will print:
-#   in fn1
-#   in fn2 and pausing
-#   back from chain.run()
-#   resumed and in fn3
-#   in done
 ```
 
 
