@@ -1,6 +1,6 @@
 ###
-  Control managed executing a Chain and provides advanced functionality to
-  the functions called in the chain.
+  Control manages a single execution process for a Chain and provides advanced
+  functionality to the functions called in the chain.
 ###
 module.exports = class Control
 
