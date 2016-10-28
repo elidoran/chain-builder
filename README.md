@@ -30,59 +30,60 @@ Some of the features:
 
 # Table of Contents (JS5)
 
-[[JS6]](http://github.com/elidoran/chain-builder/blob/master/README-JS6.md)
-[[CS]](http://github.com/elidoran/chain-builder/blob/master/README.coffee.md)
+[[JS6]](http://github.com/elidoran/chain-builder/blob/master/docs/README-JS6.md)
+[[CS]](http://github.com/elidoran/chain-builder/blob/master/docs/README.coffee.md)
 
 A. Usage
 
   1. [Basic](#usage-basic)
   2. [Simple](#usage-simple)
   3. [Complex](#usage-complex)
+  4. [Considerations](#usage-considerations)
 
 B. Executing a Chain
 
   1. [Control](#execution-control)
   2. [Flow Styles](#execution-flow-styles)
-  3. [Context or This?](#use-context-or-this)
+  3. [Context or This?](#execution-use-context-or-this-)
 
 C. [Examples](#examples)
 
-  1. [Stopping Chain](#stopping-chain)
-  2. [Pass on a Value via Context](#use-context-to-pass-on-value)
-  3. [Thrown Errors](#thrown-error)
-  4. [Pipeline/Filter](#pipelinefilter-style)
-  5. [Asynchronous](#asynchronous)
+  1. [Stopping Chain](#examples-stopping-chain)
+  2. [Pass on a Value via Context](#examples-use-context-to-pass-on-value)
+  3. [Thrown Errors](#examples-thrown-error)
+  4. [Pipeline/Filter](#examples-pipelinefilter-style)
+  5. [Asynchronous](#examples-asynchronous)
 
 D. [Advanced Contexts](#advanced-contexts)
 
-  1. [Two Contexts](#the-two-contexts)
-  2. [How to specify the this context](#how-to-specify-the-this-context)
-  3. [Why not use bind()?](#why-not-use-bind)
-  4. [Control the Shared Context](#how-to-control-the-shared-context)
+  1. [Two Contexts](#contexts-the-two-contexts)
+  2. [How to specify the this context](#contexts-how-to-specify-the-this-context)
+  3. [Why not use bind()?](#contexts-why-not-use-bind)
+  4. [Control the Shared Context](#contexts-how-to-control-the-shared-context)
 
 E. [API](#api)
 
   1. [Exported Builder Function](#api-exported-builder-function)
   2. [Chain](#api-chain)
 
-    a. [chain.run()](#api-chain-run)
-    b. [chain.add()](#api-chain-add)
-    c. [chain.remove()](#api-chain-remove)
-    d. [chain.disable()](#api-chain-disable)
-    e. [chain.enable()](#api-chain-enable)
-    f. [chain.select()](#api-chain-select)
+    * [chain.run()](#api-chain-run)
+    * [chain.add()](#api-chain-add)
+    * [chain.remove()](#api-chain-remove)
+    * [chain.disable()](#api-chain-disable)
+    * [chain.enable()](#api-chain-enable)
+    * [chain.select()](#api-chain-select)
 
   3. [Control](#api-control)
 
-    a. [control.next()](#api-control-next)
-    b. [control.context()](#api-control-context)
-    c. [control.pause()](#api-control-pause)
-    d. [control.stop()](#api-control-stop)
-    e. [control.fail()](#api-control-fail)
-    f. [control.disable()](#api-control-disable)
-    g. [control.remove()](#api-control-remove)
-    h. [resume()](#api-resume)
-    i. [resume.callback()](#api-resume-callback)
+    * [control.next()](#api-control-next)
+    * [control.context()](#api-control-context)
+    * [control.pause()](#api-control-pause)
+    * [control.stop()](#api-control-stop)
+    * [control.fail()](#api-control-fail)
+    * [control.disable()](#api-control-disable)
+    * [control.remove()](#api-control-remove)
+    * [resume()](#api-resume)
+    * [resume.callback()](#api-resume-callback)
 
 F. [MIT License](#mit-license)
 
@@ -343,9 +344,9 @@ var result = chain.run(runOptions);
 
 // result contains:
 result = {
-  result: true
+  result   : true
   , context: /* the context we provided */
-  , chain: /* the chain... */
+  , chain  : /* the chain... */
 }
 
 // lastly, remember all the events emitted from chain allow
@@ -353,7 +354,15 @@ result = {
 ```
 
 
-## Execution Control
+## Usage: Considerations
+
+1. `chain.add()` - passing a single function, without an array, will be treated as an array with a single function
+2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
+3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
+4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+
+
+## Execution: Control
 
 By default, each function will be called in sequence and the `this` will be the `context` object. This supports a basic 'chain of command' with functions having no params using the `this` to access the context.
 
@@ -364,12 +373,13 @@ The `control` parameter replaces the usual `next` and allows changing the execut
 1. pause - pauses execution until the returned resume callback is called
 2. stop - ends execution as a success
 3. fail - ends execution as an error
-4. context - override context for next function, or all functions
+4. context - override context for next function, or all functions, and continue chain execution
+5. next - continues the chain execution and then returns so you can do something after that and before you return a result
 
 Also, a `done` callback may be provided to the `chain.run()` call. It will be called with `(error, results)` when the chain is completed via any of the various flows.
 
 
-## Execution Flow Styles
+## Execution: Flow Styles
 
 A "chain of command" example is in the [simple example](#usage-simple). Each function is called in sequence.
 
@@ -384,20 +394,12 @@ It's possible to end the chain because an error has occurred with `control.fail(
 I've added an extra convenience to the `resume` function provided by `pause()`. It now has the ability to create a callback function with the standard params: `(error, result)`. It can be provided to the usual asynchronous functions as the callback and it will handle calling `control.fail()` if an error occurs or storing the result and calling `resume()`. By default, the callback's error message is "ERROR" and the default key to store the result value into the context is `result`. Override them by providing them as args to `resume.callback(errorMessage, resultKey)`.
 
 
-## Use Context or This ?
+## Execution: Use Context or This ?
 
 You may choose to use either. It is up to your own preferred style. It is possible to customize the this via options on the function, so, in that instance the *this* will be different than the *context* so both can be used.
 
 
-## Considerations
-
-1. `chain.add()` - passing a single function, without an array, will be treated as an array with a single function
-2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
-3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
-4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
-
-
-### Stopping Chain
+### Execution: Stopping Chain
 
 You may stop a chain's execution in two ways:
 
@@ -412,158 +414,176 @@ Each of these stores the same information into the *control*:
 
 Here's an example of using `control.stop()`:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = -> this.done = true
-fn2 = (control) -> if this.done then control.stop 'we are done'
-fn3 = -> console.log 'I wont run'
+function fn1() { this.done = true; }
+function fn2(control) { if(this.done) control.stop('we are done'); }
+function fn3() { console.log('I wont run'); }
 
-chain = buildChain array:[ fn1, fn2, fn3 ]
+var chain = buildChain({array:[ fn1, fn2, fn3 ]});
 
-result = chain.run context: {done:false}
-# fn3 will never run.
-# result is: {
-#   result: true
-#   stopped:{ reason:'we are done', index:1, fn:fn2 }
-#   chain: # the chain
-# }
+var result = chain.run({ context:{done:false} });
+// fn3 will never run.
+result = {
+  result   : true
+  , stopped: { reason:'we are done', index:1, fn:fn2 }
+  , chain  : // the chain
+}
 ```
 
 Here's an example of using `control.fail()`:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = -> this.problem = true
-fn2 = (control) -> if this.problem then control.fail 'there is a problem'
-fn3 = -> console.log 'I wont run'
+function fn1() { this.problem = true; }
+function fn2(control) { if(this.problem) control.fail('there is a problem'); }
+function fn3() { console.log('I wont run'); }
 
-chain = buildChain array:[ fn1, fn2, fn3 ]
+var chain = buildChain({ array:[ fn1, fn2, fn3 ] });
 
-context = problem:false
+var context = { problem:false };
 
-result = chain.run context:context
-# fn3 will never run.
-# result is: {
-#   result: false
-#   failed:{ reason:'there is a problem', index:1, fn:fn2}
-# }
+var result = chain.run({ context:context });
+// fn3 will never run.
+result = {
+  result  : false
+  , failed: { reason:'there is a problem', index:1, fn:fn2 }
+  , chain : // the chain
+};
 ```
 
-### Use Context to Pass on a Value
+### Example: Use Context to Pass on a Value
 
 Shown many times above already, the context object is available to each function. Here is an explicit example of doing so:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = -> this.give = 'high 5'
-fn2 = -> if this.give is 'high 5' then 'cheer'
+function fn1() { this.give = 'high 5'; }
+function fn2() { if(this.give == 'high 5') 'cheer'; }
 
-chain = buildChain array:[ fn1, fn2 ]
+var chain = buildChain({ array:[ fn1, fn2 ] });
 
-result = chain.run()   # will use an empty object as context
-# fn2 will, uh, *cheer*
+var result = chain.run();  // will use an empty object as context
+// fn2 will, uh, *cheer*
 ```
 
 ### Thrown Error
 
 What if a function throws an error?
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+buildChain = require('chain-builder');
 
-fn1 = -> throw new Error 'my bad'
+function fn1() { throw new Error('my bad'); }
 
-chain = buildChain array:[fn1]
+var chain = buildChain({ array:[fn1] });
 
-result = chain.run()
+var result = chain.run();
 
-# fn1 will throw an error
-# chain will catch it, end the chain, and include it in the result
-# result is {
-#   context: {}
-#   error: [Error: my bad] # value is the Error instance's string representation
-# }
+// fn1 will throw an error
+// chain will catch it, end the chain, and include it in the result
+result = {
+  result : true
+  , context: {}
+  , failed: {
+      reason : 'caught error'
+      , index: 0
+      , fn   : fn1
+      , error: // the thrown error
+  }
+}
 ```
 
 
-## Pipeline/Filter Style
+## Example: Pipeline/Filter Style
 
 This style allows performing work after the later functions return. It relies on synchronous execution.
 
 Here is an example:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = (control) ->
-  # provide some value into the context from some operation
-  this.value = doSomeOperation()
+function fn1(control) {
+  // provide some value into the context from some operation
+  this.value = doSomeOperation();
 
-  # call the later functions which will do something with the value
-  result = control.next()
+  // call the later functions which will do something with the value
+  var result = control.next();
 
-  # check for an error before doing more work
-  unless result?.error?
+  // check for an error before doing more work
+  if (result && !!result.error) {  
+      // do something after the rest of the chain has run
+      this.anotherValue = someOtherOperation(this.valueFromLaterFunctions);
+  }
 
-    # do something after the rest of the chain has run
-    this.anotherValue = someOtherOperation this.valueFromLaterFunctions
+  // then let the function return the result it received
+  // Note, this can be changed as well, or, not returned at all.
+  return result;
+}
 
-  # then let the function return the result it received
-  # Note, this can be changed as well, or, not returned at all.
-  return result
+function fn2() { this.valueFromLaterFunctions = someOperationOfItsOwn(); }
 
-fn2 = () -> this.valueFromLaterFunctions = someOperationOfItsOwn()
+var chain = buildChain({ array:[fn1, fn2] })
+  , result = chain.run();
 
-chain = buildChain array:[fn1, fn2]
-result = chain.run()
-result = # {
-#   value: 'something'                        <-- fn1 put this into context
-#   valueFromLaterFunctions: 'something more' <-- fn2 put this into context
-#   anotherValue: 'something else'            <-- fn1 did this *after* fn2 ran
-# }
+// the result is:
+result = {
+  value: 'something'                        // <-- fn1 put this into context
+  valueFromLaterFunctions: 'something more' // <-- fn2 put this into context
+  anotherValue: 'something else'            // <-- fn1 did this *after* fn2 ran
+}
 ```
 
 
-## Asynchronous
+## Example: Asynchronous
 
 Although the above examples show synchronous execution it is possible to run a chain asynchronously using the `control.pause()` function.
 
 An example:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = -> console.log this.message1
+function fn1() { console.log(this.message1); }
 
-fn2 = (control, context) ->
-  console.log this.message2
-  resume = control.pause 'just because'  # returns a function to call to resume execution
-  setTimeout resume, 1000 # schedule resume in a second
-  return # return nothing
+function fn2(control, context) {
+  console.log(this.message2);
+  // returns a function to call to resume execution
+  var resume = control.pause('just because')
+   schedule resume in a second
+  setTimeout(resume, 1000);
+  return
+}
 
-fn3 = () -> console.log this.message3
+function fn3() { console.log(this.message3); }
 
-chain = buildChain array:[fn1, fn2, fn3]
-result = chain.run context:
-  message1: 'in fn1'
-  message2: 'in fn2 and pausing'
-  message3: 'resumed and in fn3'
+var chain = buildChain({ array:[fn1, fn2, fn3] })
+  , result = chain.run({
+      context: {
+        message1  : 'in fn1'
+        , message2: 'in fn2 and pausing'
+        , message3: 'resumed and in fn3'
+      }
+    });
 
-result = # { returned when chain is paused
-#   paused: { reason: 'just because', index:1, fn:fn2 }
-# }
+// returned when chain is paused
+result = {
+  paused: { reason: 'just because', index:1, fn:fn2 }
+}
 
-# this will be printed before the chain is resumed and fn3 is run
-console.log 'back from chain.run()'
+// this will be printed before the chain is resumed and fn3 is run
+console.log('back from chain.run()');
 
-# the console will print:
-#   in fn1
-#   in fn2 and pausing
-#   back from chain.run()
-#   resumed and in fn3
+/* the console will print:
+ in fn1
+ in fn2 and pausing
+ back from chain.run()
+ resumed and in fn3
+*/
 ```
 
 If your code calls the `resume` function then it will receive the final result usually returned by `chain.run()`.
@@ -572,46 +592,55 @@ Using `setTimeout()` and other similar functions will make extra work to get tha
 
 Here's an example:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder');
 
-fn1 = -> console.log this.message1
+function fn1() { console.log(this.message1); }
 
-fn2 = (control, context) ->
-  console.log this.message2
-  resume = control.pause 'just because'  # returns a function to call to resume execution
-  setTimeout resume, 1000 # schedule resume in a second
-  return # return nothing
+function fn2(control, context) {
+  console.log(this.message2);
+  // returns a function to call to resume execution
+  var resume = control.pause('just because');
+  setTimeout(resume, 1000); // schedule resume in a second
+  return
+}
 
-fn3 = () -> console.log this.message3
+function fn3() { console.log(this.message3); }
 
-chain = buildChain array:[fn1, fn2, fn3]
+var chain = buildChain({ array:[fn1, fn2, fn3] });
 
-# specify a done callback as part of the options object which will be run when
-# the chain run is finished
-context =
+// specify a done callback as part of the options object which will be run when
+// the chain run is finished
+var context = {
   message1: 'in fn1'
   message2: 'in fn2 and pausing'
   message3: 'resumed and in fn3'
+}
 
-result = chain.run context:context, done:(error, results) ->
-  # the results object is the same as what chain.run() returns when synchronous
-  console.log 'in done'
+var result = chain.run({
+  context:context
+  , done: function(error, results) {
+    // the results object is the same as what chain.run()
+    // returns when synchronous
+    console.log('in done');
+  }
+});
 
-result = # { returned when chain is paused
-#   paused: { reason: 'just because', index:1, fn:fn2 }
-# }
+result = { // returned when chain is paused
+  paused: { reason: 'just because', index:1, fn:fn2 }
+}
 
-# this will be printed before the chain is resumed and fn3 is run, and,
-# before the done callback is called, of course
-console.log 'back from chain.run()'
+// this will be printed before the chain is resumed and fn3 is run, and,
+// before the done callback is called, of course
+console.log('back from chain.run()');
 
-# the console will print:
-#   in fn1
-#   in fn2 and pausing
-#   back from chain.run()
-#   resumed and in fn3
-#   in done
+/* the console will print:
+ in fn1
+ in fn2 and pausing
+ back from chain.run()
+ resumed and in fn3
+ in done
+*/
 ```
 
 
@@ -620,45 +649,52 @@ console.log 'back from chain.run()'
 There are two "contexts" which have been the *same* in all the above examples.
 It is possible to make them different for advanced use. Please, be careful :)
 
-### The two contexts
+### Contexts: The two contexts
 
 1. **shared context** : the second argument passed to each function
 
-```coffeescript
-    (control, context) -> console.log '<-- that context'
+```javascript
+function (control, context) {
+  console.log('<-- that context');
+}
 ```
 
 2. **this context** : the *this* while each function is executing
 
-```coffeescript
-    (control, context) -> console.log 'that context-->' + this.someProperty
+```javascript
+function(control, context) {
+  console.log('that context-->', this.someProperty);
+}
 ```
 
-### How to specify the `this` context
+### Contexts: How to specify the `this` context
 
 Provide an options object on the function which includes a `this` property. When you do, the `this` will be set as the *this* for the function.
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder')
+  , specificThis = { some:'special this' };
 
-specificThis = some:'special this'
+function fn(control, sharedContext) {
+  console.log('*this* is specificThis. some=', this.some);
+  console.log('sharedContext is a shared ', sharedContext.shared);
+}
 
-fn = (control, sharedContext) ->
-  console.log '*this* is specificThis. some=', this.some
-  console.log 'sharedContext is a shared ', sharedContext.shared
+fn.options = { this: specificThis };
 
-fn.options = this:specificThis
+var chain = buildChain({ array:[fn] });
 
-chain = buildChain array:[fn]
+chain.run({ context: shared:'object' });
 
-chain.run context: shared:'object'
+/* prints:
 
-# prints:
-#   *this* is specificThis. some=special this
-#   sharedContext is a shared object
+*this* is specificThis. some=special this
+sharedContext is a shared object
+
+*/
 ```
 
-### Why not use `bind()` ?
+### Contexts: Why not use `bind()` ?
 
 When using `bind()` it wraps the function with another function which calls it with the `this` context specified. That means to call the function it's now two function calls.
 
@@ -666,39 +702,42 @@ When specifying the `this` via an option it is used in the `fn.call()` as an arg
 
 See:
 
-```coffeescript
-# we'll use bind on this one
-fn1Original = -> console.log this.message  # that's a one and a capital O
-fn1This = message:'I am two calls'
-fn1Bound = fn1.bind fn1This
+```javascript
+// we'll use bind on this one, that's a one and a capital Oh
+function fn1Original() { console.log(this.message); }
+var fn1This = { message:'I am two calls' }
+  , fn1Bound = fn1.bind(fn1This);
 
-# we'll use the options.this on this one
-fn2 = -> console.log this.message
-fn2This = message:'I am one call'
-fn2.options = this:specialThis
+// we'll use the `options.this` on this one
+function fn2() { console.log(this.message); }
+var fn2This = { message:'I am one call' }
+fn2.options = { this:specialThis }
 
-chain = buildChain()
-chain.add fn1Bound, fn2
-chain.run()
+var chain = buildChain();
 
-# for fn1, it is equivalent to this:
-# the chain will call the bound function like this:
-fn1Bound.call context, control, context
-# when called, the bound function will use apply to call
-# the original function with the fn1This
-fn1Bound = ->
+chain.add(fn1Bound, fn2);
+chain.run();
+
+// for fn1, it is equivalent to this:
+// the chain will call the bound function like this:
+fn1Bound.call(context, control, context);
+
+// when called, the bound function will use apply to call
+// the original function with the fn1This
+fn1Bound() {
   fn1Original.apply fn1This, Array.prototype.slice.call arguments
-# so, the first call specifies a *this* which will be overridden
-# by the bound function.
+}
+// so, the first call specifies a *this* which will be overridden
+// by the bound function.
 
-# for fn2, it is simpler because it passes the special this to the
-# first *call*. So, no second call. No need for bind().
-fn2.call fn2.options.this, control, context
+// for fn2, it is simpler because it passes the special this to the
+// first *call*. So, no second call. No need for bind().
+fn2.call(fn2.options.this, control, context);
 ```
 
 Note, using `control.context()` overrides the *context* provided to the next function. Using `fn.options.this` overrides the *this*. This means, it's possible to completely change what a function receives as context and this and have a different view than all other functions called in a chain.
 
-### How to Control the Shared Context
+### Contexts: How to Control the Shared Context
 
 The *shared context* can be manipulated in multiple ways.
 
@@ -711,88 +750,105 @@ Once a chain is running you may alter the context used both *permanently* and *i
 
 Here is an example of an impermanent override:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder')
+  , defaultContext = {}
+  , overrideContext = {};
 
-defaultContext = {}
-overrideContext = {}
+function fn1() { this.fn1 = 'this'; }
 
-fn1 = -> this.fn1 = 'this'
+function fn2(control, context) { context.fn2 = 'context'; }
 
-fn2 = (control, context) -> context.fn2 = 'context'
+function fn3(control) {
+  this.fn3 = 'this';
+  control.context(overrideContext);
+}
 
-fn3 = (control) ->
-  this.fn3 = 'this'
-  control.context overrideContext
+function fn4(control, context) {
+  this.fn4 = 'this';
+  context.fn4 += ', context';
+}
 
-fn4 = (control, context) ->
-  this.fn4 = 'this'
-  context.fn4 += ', context'
+function fn5(control, context) {
+  this.fn5 = 'this';
+  context.fn5 += ', context';
+}
 
-fn5 = (control, context) ->
-  this.fn5 = 'this'
-  context.fn5 += ', context'
+var chain = buildChain({ array:[fn1, fn2, fn3, fn4, fn5] })
+  , result = chain.run({ context:defaultContext });
 
-chain = buildChain array:[fn1, fn2, fn3, fn4, fn5]
-result = chain.run context:defaultContext
-result = # {
-#   result:true
-#   context: {        # this is the default context, missing `fn4`
-#     fn1 : 'this'
-#     fn2 : 'context'
-#     fn3 : 'this'
-#     fn5 : 'this, context'
-#   }
-# }
-overrideContext = # {
-#   fn4 : 'this, context'
-# }
+// result is:
+result = {
+  result:true
+  , context: { // this is the default context, missing `fn4`
+    fn1  : 'this'
+    , fn2: 'context'
+    , fn3: 'this'
+    , fn5: 'this, context'
+  }
+  , chain: // the chain
+}
+
+// the overrideContext is:
+overrideContext = {
+  fn4: 'this, context'
+}
 ```
 
 Only `fn4` received the `overrideContext`.
 
 Here is an example of a permanent override:
 
-```coffeescript
-buildChain = require 'chain-builder'
+```javascript
+var buildChain = require('chain-builder')
+  , defaultContext = {}
+  , overrideContext = {};
 
-defaultContext = {}
-overrideContext = {}
+function fn1() { this.fn1 = 'this'; }
 
-fn1 = -> this.fn1 = 'this'
+function fn2(_, context) { context.fn2 = 'context'; }
 
-fn2 = (_, context) -> context.fn2 = 'context'
+function fn3(control) {
+  this.fn3 = 'this';
+  control.context(overrideContext, true) // <-- the `true` makes it permanent
+}
 
-fn3 = (control) ->
-  this.fn3 = 'this'
-  control.context overrideContext, true    # <-- the `true` makes it permanent
+function fn4(control, context) {
+  this.fn4 = 'this';
+  context.fn4 += ', context';
+}
 
-fn4 = (control, context) ->
-  this.fn4 = 'this'
-  context.fn4 += ', context'
+function fn5(control, context) {
+  this.fn5 = 'this';
+  context.fn5 += ', context';
+}
 
-fn5 = (control, context) ->
-  this.fn5 = 'this'
-  context.fn5 += ', context'
+var chain = buildChain({ array:[fn1, fn2, fn3, fn4, fn5] })
+  , result = chain.run({ context:defaultContext });
 
-chain = buildChain array:[fn1, fn2, fn3, fn4, fn5]
-result = chain.run context:defaultContext
-result = # {
-#   result:true
-#   context: {   <-- this is the overrideContext
-#     fn4 : 'this, context'
-#     fn5 : 'this, context'
-#   }
-# }
-defaultContext = # {  <-- wasn't returned in final result, doesn't have fn4/fn5
-  #     fn1 : 'this'
-  #     fn2 : 'context'
-  #     fn3 : 'this'
-# }
-overrideContext = # {  <-- was in final result, contains fn's after the override
-  #     fn4 : 'this, context'
-  #     fn5 : 'this, context'
-# }
+// result contains:
+result = {
+  result:true
+  , context: {  // <-- this is the overrideContext
+    fn4 : 'this, context'
+    , fn5 : 'this, context'
+  }
+}
+
+// wasn't returned in final result, doesn't have fn4/fn5
+// defaultContext contains:
+defaultContext = {
+  fn1  : 'this'
+  , fn2: 'context'
+  , fn3: 'this'
+}
+
+// was in final result, contains fn's after the override
+// overrideContext contains:
+overrideContext = {
+  fn4  : 'this, context'
+  , fn5: 'this, context'
+}
 ```
 
 
@@ -857,40 +913,5 @@ The chain emits these events:
 9. enable: when `chain.enable()` is called *and* its target actually needed enabling
 10. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
 
-
-# JavaScript Style Usage
-
-[CoffeeScript Usage](#usage)
-
-## JS Usage
-
-TODO: complete all JS code examples for each CS example above.
-
-### JS Simple
-
-```javascript
-buildChain = require('chain-builder');
-
-function fn1() { this.message += ' there'; }; // message = 'hello there'
-// context = this,  so, the below is equivalent
-// function fn1(control, context) { context.message += ' there'; };
-function fn2() { this.message += ', Bob'; };  // message = 'hello there, Bob'
-function fn3() { console.log(this.message); };// writes full message to console
-
-chain = buildChain();
-chain.add(fn1, fn2, fn2);
-// could already be in an array like:
-// chain.add([fn1, fn2, fn3])
-
-// a mutable object given to each fn in the chain
-context = {message:'hello'}
-
-result = chain.run({context: context});
-// prints 'hello there, Bob' to the console
-// result has information depending on what occurred, this simple one is: {
-//   result:true,
-//   context: { message:'hello there, Bob' }
-// }
-```
 
 ## MIT License
