@@ -138,11 +138,10 @@ module.exports = class Control
           # in the next loop iteration.
           context = null
 
-        catch e then error = e
+        catch e then return control.fail 'caught error', e
 
         # break the loop if we have an error to return
         return result if result?.error?
-        return error:error if error?
 
         # break the loop if they said so
         return result if @paused? or @stopped? or @failed?
