@@ -463,12 +463,22 @@ describe 'test running chain', ->
     chain = buildChain()
 
   it 'should catch thrown errors', ->
-    chain.add -> throw new Error 'my bad'
+    theError = null
+    theFn = ->
+      theError = new Error 'my bad'
+      throw theError
+
+    chain.add theFn
+
     results = chain.run()
+    
     assert results, 'should return results'
-    assert results.result, 'results should contain the result'
-    assert results.result.error, 'result should contain the `error`'
-    assert.equal results.result.error.message, 'my bad'
+    assert.equal results.result, false, 'results should contain the result'
+    assert.strictEqual results.failed?.error, theError, 'result should contain the `error`'
+    assert.equal results.failed.error?.message, 'my bad'
+    assert.equal results.failed?.reason, 'caught error'
+    assert.equal results.failed?.index, 0, 'function should be first in the array'
+    assert.strictEqual results.failed?.fn, theFn
 
   describe 'synch\'ly', ->
 
@@ -766,8 +776,6 @@ describe 'test running chain', ->
 
       # run with default context, we can check it from result
       result = chain.run done:(err, res) ->
-        console.log 'err:',err
-        console.log 'res:',res
         assert.equal err.reason, 'error!'
         assert.equal err.index, 0, 'should have failing function at 0'
         assert.strictEqual err.fn, failer
