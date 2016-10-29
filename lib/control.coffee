@@ -55,31 +55,58 @@ module.exports = class Control
 
       resumer()
 
-
-  # more readable for pipeline style to call next() and then do more work after it.
+  # continues executing the chain and then returns to the calling function.
+  # optionally perform a temporary or permanent context change.
   # if a function wants to do work after the rest of the chain has executed,
   # then it calls next(), which returns once the rest are done.
   # Note: that's for sync processing. if they pause(), then, that'll return
   # to them as the result with the 'paused' info.
-  next: -> @_execute()
+  next: (context, permanent) ->
 
+    # don't call @context() because we'll pass context to _execute() below.
+    # do check if it's a permanent change tho. do that if it's true.
+    if permanent then @_context = context
 
-  # allows specifying a context to use in the next call, or, override it permanently
+    # if we set an index to use on the next call, then use it now
+    if @__index?
+      # remember the index which was set, and change the active index to it
+      index = @_index = @__index
+
+      # remove the set index for future calls
+      # (as we backup their after execute() step will overwrite this anyway...?)
+      delete @__index
+
+    else # remember the index as it is right now.
+      index = @_index
+
+    # begin executing the chain again using this new context.
+    # without the 'permanent' overwrite above, this will only be used to call
+    # the next function before being dropped.
+    result = @_execute context
+
+    # before exiting this function, mark the index we remembered in case
+    # they call this next() again
+    @__index = index
+
+    # return the result back to the caller of next()
+    return result
+
+  # this allows changing the context for the next function called, or,
+  # permanently changing the context for all calls and the return result.
   context: (context, permanent) ->
 
     # if they specify 'permanent' then overwrite our stored context with this one
     # this ensures it will be used from now on
     if permanent then @_context = context
 
-    # begin executing the chain again using this new context.
-    # without the 'permanent' overwrite above, this will only be used to call
-    # the next function before being dropped.
-    @_execute context
+    # remember it for the next run only
+    else @_nextContext = context
 
+    return
 
   # this is the main function to execute the chain
   _execute: (context) ->
-    # these shouldn't ever happen...
+    # these shouldn't ever happen... # TODO: change to return error:'...'
     if @paused?  then throw new Error 'paused, can not perform _execute()'
     if @stopped? then throw new Error 'stopped, can not perform _execute()'
     if @failed?  then throw new Error 'failed, can not perform _execute()'
@@ -123,8 +150,11 @@ module.exports = class Control
         try
           # local aliases (for readability)
           control = this
-          context ?= @_context
           fn = array[index]
+          # either: 1. give as a param; 2. set with context(); 3. default context
+          context = context ? @_nextContext ? @_context
+          # now forget that one
+          @_nextContext = null
 
           # check if the `fn` is disabled
 
@@ -147,6 +177,9 @@ module.exports = class Control
         return result if @paused? or @stopped? or @failed?
 
       # we made it all the way
+      # TODO:
+      #  make it possible for a function to alter the result returned
+      #  back to the _execute() call.
       else return true
 
 
