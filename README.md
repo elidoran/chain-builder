@@ -67,24 +67,24 @@ E. [API](#api)
   1. [Exported Builder Function](#api-exported-builder-function)
   2. [Chain](#api-chain)
 
-    * [chain.run()](#api-chain-run)
-    * [chain.add()](#api-chain-add)
-    * [chain.remove()](#api-chain-remove)
-    * [chain.disable()](#api-chain-disable)
-    * [chain.enable()](#api-chain-enable)
-    * [chain.select()](#api-chain-select)
+    * [chain.run()](#api-chainrun)
+    * [chain.add()](#api-chainadd)
+    * [chain.remove()](#api-chainremove)
+    * [chain.disable()](#api-chaindisable)
+    * [chain.enable()](#api-chainenable)
+    * [chain.select()](#api-chainselect)
 
   3. [Control](#api-control)
 
-    * [control.next()](#api-control-next)
-    * [control.context()](#api-control-context)
-    * [control.pause()](#api-control-pause)
-    * [control.stop()](#api-control-stop)
-    * [control.fail()](#api-control-fail)
-    * [control.disable()](#api-control-disable)
-    * [control.remove()](#api-control-remove)
+    * [control.next()](#api-controlnext)
+    * [control.context()](#api-controlcontext)
+    * [control.pause()](#api-controlpause)
+    * [control.stop()](#api-controlstop)
+    * [control.fail()](#api-controlfail)
+    * [control.disable()](#api-controldisable)
+    * [control.remove()](#api-controlremove)
     * [resume()](#api-resume)
-    * [resume.callback()](#api-resume-callback)
+    * [resume.callback()](#api-resumecallback)
 
 F. [MIT License](#mit-license)
 
@@ -979,7 +979,7 @@ Returns an object with properties:
 1. **result** - true/false depending on success
 2. **context** - the final context object. It may be the default one created, the one specified in the first parameter, or one provided by a function as a "permanent override".
 3. **chain** - the chain. May seem weird to provide it, but, the same "result" is provided to the "done" callback and that may be added to more than one chain.
-4. **paused** / **stopped** / **failed** - when a function calls [pause()](#api-control-pause), [stop()](#api-control-stop), or [fail()](#api-control-fail) then their corresponding property contains:
+4. **paused** / **stopped** / **failed** - when a function calls [pause()](#api-controlpause), [stop()](#api-controlstop), or [fail()](#api-controlfail) then their corresponding property contains:
 
   1. **reason** - the `reason` provided to the call, or, true
   2. **index** - the index of the function in the chain which called it
@@ -1056,7 +1056,7 @@ Parameters for disabling the entire chain:
 
 Parameters for disabling a single function:
 
-1. a required value used to specify which function to disable. Read about these three types above in [chain.remove()](#api-chain-remove).
+1. a required value used to specify which function to disable. Read about these three types above in [chain.remove()](#api-chainremove).
 2. the second param is normally optional, but, because `disable()` may also apply to the chain itself, we must differentiate `chain.disable(reasonString)` from `chain.disable(functionIdString)`. So, if the first param is a number or a function then this second param is options. If the first param is a string representing the `id` of a function, then, you **must** provide this second arg. If you don't care about its value, simply specify `true`.
 
 Returns:
@@ -1079,7 +1079,7 @@ Enable the entire chain or a specific function in the chain.
 
 Parameters:
 
-1. the only parameter is determines whether to enable the chain or a function, and, which function to enable. No first parameter means enable the whole chain. Otherwise, the first param can have three types. Read about these three types above in [chain.remove()](#api-chain-remove).
+1. the only parameter is determines whether to enable the chain or a function, and, which function to enable. No first parameter means enable the whole chain. Otherwise, the first param can have three types. Read about these three types above in [chain.remove()](#api-chainremove).
 
 Returns:
 
@@ -1164,7 +1164,7 @@ Parameters:
 
 Returns:
 
-A final results object like what [chain.run()](#api-chain-run) receives.
+A final results object like what [chain.run()](#api-chainrun) receives.
 
 Examples:
 
