@@ -282,7 +282,10 @@ module.exports = class Chain extends require('events').EventEmitter
       result.removed = array  # provide what we removed
       @emit 'clear', result   # emit a remove event with the array we removed
 
-    else result.reason = 'chain empty'
+    else
+      # on second thought, an already empty array *is* a success...
+      result.result = true
+      result.reason = 'chain empty'
 
     return result
 
