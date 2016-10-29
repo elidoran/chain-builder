@@ -989,6 +989,39 @@ Returns an object with properties:
 
 Keep in mind, the returned object may not have the final contents when `control.pause()` is used because it receives back what's available up to the pause point.
 
+Examples:
+
+```javascript
+var result;
+
+// use default context, no done callback.
+result = chain.run();
+
+// override the context
+result = chain.run({ context:{} });
+
+// and provide a done callback as second arg
+result = chain.run({ context:{}}, function onDone() {});
+
+// put done callback into run options (first arg)
+result = chain.run({ context:{}, done: function onDone() {
+  // on done do this...
+}});
+
+// provide a `base`, prototype, for the context
+result = chain.run({ base: someProtoObject });
+
+// provide both a `base`, prototype, and a props description for the context
+// see documentation for Object.create(base, props) ...
+result = chain.run({ base: someProtoObject, props: somePropsDesc });
+
+// override the context builder completely
+// see examples above in the chain builder docs.
+result = chain.run({ buildContext: function contextBuilder(options) {
+  // get context from options, or create it here...
+}});
+```
+
 
 ### API: chain.add()
 
@@ -1006,6 +1039,19 @@ An object is returned with a `result` property which has a `true` value for succ
 Event:
 
 An `add` event is emitted with the same object described in the "Returns" section above.
+
+Examples:
+
+```javascript
+// add a single function
+chain.add(fn1);
+
+// add multiple functions
+chain.add(fn1, fn2, fn3);
+
+// add using an array
+chain.add([ fn1, fn2, fn3 ]);
+```
 
 
 ### API: chain.remove()
@@ -1032,12 +1078,73 @@ Event:
 
 A `remove` event is emitted with the same object described above as the return object.
 
+Examples:
+
+```javascript
+var result;
+
+// remove a function via its index.
+// this removes the third function.
+result = chain.remove(2);
+
+// remove a function via itself
+result = chain.remove(fn1);
+
+// remove using the function's `id`
+// function must have an `options` property,
+// which is an object, and it must have an `id` property of 'theid'
+result = chain.remove('theid');
+
+// provide a reason as the second arg for any of the above types:
+result = chain.remove(/* any of the above */, 'some reason');
+
+// if a removal is successful the result is:
+result = {
+  result   : true
+  , reason : true // the reason provided, or `true` by default
+  , removed: [ ]  // array containing the removed function
+}
+
+// if an invalid index is used then the result is:
+result = {
+  result: false
+  , reason: 'Invalid index: 0' // zero would be the actual index specified
+}
+
+// if a function is specified and it isn't found, either by itself ref, or
+// by its id, then the result is:
+result = {
+  result: false,
+  reason: 'not found'
+}
+
+// if an invalid value is specified then an error is returned:
+// (anything other than: number, string, and function)
+result = {
+  result  : false
+  , reason: 'Requires a string (ID), an index, or the function'
+  , which : // the thing given to the remove() call
+}
+```
+
 
 ### API: chain.clear()
 
 Removes all functions from the chain and emits a `clear` event containing the removed functions.
 
 If the chain is already empty then the return, and the emitted event, will have a false `result` and `reason` 'chain is empty'.
+
+Example:
+
+```javascript
+var result = chain.clear();
+result = {
+  result: true
+  , removed: [ /* all functions removed */ ]
+  // if array was already empty then it'll have:
+  , reason: 'chain empty'
+}
+```
 
 
 ### API: chain.disable()
@@ -1071,6 +1178,58 @@ Event:
 
 A `disable` event is emitted containing the same result object as the return object described above.
 
+Examples:
+
+```javascript
+var result;
+
+// disable the entire chain.
+result = chain.disable();
+result = {
+  result: true
+  , reason: true // reason defaults to `true`
+  , chain: // the chain
+}
+
+// disable the entire chain with a reason
+result = chain.disable('some reason');
+result = {
+  result: true
+  , reason: 'some reason' // reason specified
+  , chain: // the chain
+}
+
+
+// disable a specific function
+// there are three different ways to specify which function to disable
+var which;
+
+// 1. specify an index of a function
+which = 3;
+
+// 2. or specify the function itself
+which = someFunction;
+
+// 3. or specify the string id of the function
+which = 'theid';
+
+result = chain.disable(which, 'some reason');
+
+result = {
+  result  : true
+  , reason: 'some reason' // specified reason, or `true`
+  , fn    : // the function disabled
+}
+
+// Note, the `reason` is optional when specifying the index or function.
+// NOT when specifying the `id`.
+chain.disable(3);         // is okay
+chain.disable(someFn);    // is okay
+
+// NOOOOOO. this would disable the entire chain with reason 'some-id'.
+chain.disable('some-id');
+```
+
 
 ### API: chain.enable()
 
@@ -1097,6 +1256,48 @@ A `enable` event is emitted containing the same result object as the return obje
 
 Note, if the target is **not disabled** then no `enable` event will be emitted.
 
+Examples:
+
+```javascript
+var result;
+
+// enable the entire chain.
+result = chain.enable();
+result = {
+  result: true
+  , chain: // the chain
+}
+
+
+// enable a specific function
+// there are three different ways to specify which function to enable
+var which;
+
+// 1. specify an index of a function
+which = 3;
+
+// 2. or specify the function itself
+which = someFunction;
+
+// 3. or specify the string id of the function
+which = 'theid';
+
+result = chain.enable(which);
+
+result = {
+  result  : true
+  , fn    : // the function enabled
+}
+
+// if the function or chain is NOT disabled:
+result = {
+  result: false
+  // for enable()
+  , reason = 'chain not disabled'
+  // for enable(which)
+  , reason = 'function is not disabled'
+}
+```
 
 ### API: chain.select()
 
@@ -1120,7 +1321,7 @@ The function provided to `select()` receives two parameters:
 1. the function it must choose to include or exclude
 2. the index in the chain's array where the function is
 
-Example:
+Examples:
 
 ```javascript
 function selector(fn, index) {
@@ -1149,8 +1350,17 @@ select.affect(function(fn, index) {
 
 Each `chain.run()` execution creates a new `Control` instance to oversee it and provide functionality to the functions being executed.
 
+The `control` instance is provided to each executed function as the first parameter.
+
 It's **not required** to make use of the `control`. Each function can ignore it and the sequential execution of the chain's functions will happen.
 
+Example:
+
+```javascript
+function (control) {
+  // use `control` as you choose. or ignore it completely.
+}
+```
 
 ### API: control.next()
 
@@ -1202,7 +1412,6 @@ function retryWorker(control) {
 }
 ```
 
-
 ### API: control.context()
 
 Temporarily change the context given to the next function, or, permanently change the context for all subsequent functions and make it part of the final results.
@@ -1210,7 +1419,7 @@ Temporarily change the context given to the next function, or, permanently chang
 Parameters:
 
 1. **context** - optionally specify a new context object for the next function(s)
-2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final result`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
+2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final `result`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
 
 Returns:
 
