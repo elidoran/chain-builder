@@ -1278,14 +1278,14 @@ function worker(control, context) {
     }
 
     // always call resume()
-    resume()
+    resume();
   });
 }
 ```
 
 Using the `resume.callback()` for the same results:
 
-```
+```javascript
 function worker(control) {
   var resume = control.pause('because i said so'),
     , callback = resume.callback('Failed to read config file', 'fileContent');
