@@ -241,7 +241,9 @@ module.exports = class Control
   # it 'could' specify an id or index to remove another function.
   # simply record this was called, then, when execution steps back into
   # the `control` it can remove the function
-  remove: (reason = true) -> @_remove = reason
+  remove: (reason = true) ->
+    @_remove = reason
+    return true
 
 
   # start, temporarily, skipping execution of the current function.
