@@ -1252,6 +1252,10 @@ Callback helper Parameters:
 1. optional error message which will be passed to `control.fail()` if an error occurs. Defaults to "ERROR".
 2. optional property name (result key) to set the result into the `context` with. Defaults to "result".
 
+Event:
+
+Emits a 'pause' event with the `paused` object as described below.
+
 Examples:
 
 A simple use of the resume function:
@@ -1287,7 +1291,7 @@ Using the `resume.callback()` for the same results:
 
 ```javascript
 function worker(control) {
-  var resume = control.pause('because i said so'),
+  var resume = control.pause('because i said so')
     , callback = resume.callback('Failed to read config file', 'fileContent');
 
   fs.readFile('./some/file.ext', 'utf8', callback);
@@ -1333,8 +1337,6 @@ result = {
     , fn   : worker              // our worker function
   }
 };
-
-// the result provided to the `done` callback
 ```
 
 
@@ -1342,7 +1344,7 @@ result = {
 
 Stops executing the chain and returns a **success** result with the reason provided to `stop()`.
 
-Note, this is for **early termination** of an execution. Not for an error. When there's an error, use [control.fail()](#api-controlfail).
+Note, this is for **early termination** of an execution. Not for an error. When there's an error use [control.fail()](#api-controlfail).
 
 
 Parameters:
@@ -1352,6 +1354,10 @@ Parameters:
 Returns:
 
 `true`. Yup, that's it. :)
+
+Event:
+
+Emits a 'stop' event with an object containing both the current `context` and the `stopped` object as described below.
 
 Example:
 
@@ -1364,8 +1370,8 @@ function stopper(control) {
 
 // the final result:
 result = {
-  result: true  // true because a stop() is still a success
-  , chain: // the chain
+  result   : true  // true because a stop() is still a success
+  , chain  : // the chain
   , stopped: { // when stop() is called this object is in results
     reason : 'we have what we need' // message supplied to stop()
     , index: 0       // the index of the stopper function in the chain
@@ -1388,6 +1394,10 @@ Parameters:
 Returns:
 
 `false`. Yup, that's it. :)
+
+Event:
+
+Emits a 'fail' event with an object containing both the current `context` and the `failed` object as described below.
 
 Example:
 
@@ -1425,6 +1435,10 @@ Returns:
 
 The same object as described above in [chain.disable()](#api-chaindisable).
 
+Event:
+
+Emits a 'disable' event just like [chain.disable()](#api-chaindisable).
+
 Examples:
 
 ```javascript
@@ -1449,6 +1463,10 @@ Parameters:
 Returns:
 
 `true`, Yup, that's it.
+
+Event:
+
+Emits a 'remove' event just like [chain.remove()](#api-chainremove).
 
 Examples:
 
