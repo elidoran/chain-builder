@@ -856,27 +856,277 @@ overrideContext = {
 
 ### API: exported builder function
 
-Options:
+The module exports a single "builder" function. It accepts one parameter which can be various types. It returns a new `Chain` instance.
 
-1. array
-2. contextBase - used in default context builder
-3. buildContext - overrides context builder
+#### Parameter can be:
+
+* **function** - a single function to put into the chain
+* **array** - an array containing functions to put into the chain. The array contents are validated immediately and an object with an 'error' property is returned if the array contains anything other than functions.
+* **object** - an object containing any of the below "options"
+
+#### Options:
+
+* **array** - the "array" described above as a parameter.
+* **base** - used in the default context builder as the first param to `Object.create()`
+* **props** - used in the default context builder as the second param to `Object.create()`
+* **buildContext** - overrides the context builder. It is described below with an example.
+
+#### Use the base or props options
+
+The `base` and `props` are used in `Object.create(base, props)` to build the default context object. You may provide functions, or anything you could specify in an object's `prototype`. This allows adding helper functions and constants to the `context` object.
+
+#### Example:
+
+```javascript
+function worker(control, context) {
+  context.num = context.sum(context.num, 456);
+}
+
+var base = {
+    num: 123
+    , sum: function(a, b) { return a + b; }
+  }
+  , runOptions = { base: base }
+  , result = chain.run(runOptions);
+
+// results ...
+result = {
+  result   : true
+  , chain  : // the chain...
+  , context: {
+    num: 579  // sum of 123 and 456
+    // no `sum` because that's a prototype property.
+    // do `delete context.num` and then `context.num` you'd get: 123
+  }
+}
+```
+
+#### Override the Context Builder Function
+
+The `buildContext` option, the "context builder", is a function accepting the "options" object provided to `chain.run()` and returning the object to use as the `context` for that execution run. If the `options` object contains a `context` property then it should return that object, but, it may alter it before doing so.
+
+#### Example:
+
+```javascript
+var buildChain = require('chain-builder')
+  , SomeClass = require('some-module');
+
+// this is the kind of function you'd provide as `buildContext` in options.
+function contextBuilder(options) {
+  if (options && options.context) {
+    return options.context;
+  } else {
+    // the options are from `chain.run(options)`
+    return new SomeClass((options && options.someOptions) || {})
+  }
+}
+
+function worker(control, context) {
+  // the `context` is the instance of SomeClass.
+  var something = context.useSomeFunction();
+  context.doSomethingElse();
+}
+
+var chain = buildChain({ buildContext: contextBuilder, array:[ worker ] })
+  , runOptions = { someOptions:{ example: 'value' } }
+  , result = chain.run(runOptions);
+
+// result...
+result = {
+  result   : true
+  , chain  : // the chain
+  , context: { /* the instance of SomeClass */ }
+}
+```
 
 ## API: Chain
 
-### API: chain.run(options:Object[, done:Function])
+### API: chain.run()
 
-### API: chain.add(fn[, fn]*)
+Primary function which performs a single execution of all functions in the chain.
 
-May also provide an array as an argument.
+Parameters:
 
-### API: chain.remove(index:number | id:string)
+1. **options** - object containing the below options
+2. **done** - an optional callback function added as a listener to the 'done' event.
 
-### API: chain.disable(index:number | id:string | function)
+Options Parameter:
 
-### API: chain.enable(index:number | id:string | function)
+1. **done** - the 'done' callback function added as a listener to the 'done' event
+2. **context** - the context object provided to each function
+3. **base** - when the `context` option isn't specified then `chain` will build a context object using `chain._buildContext()`. That uses `Object.create(base, props)` to build the object. The `base` option will be used there. When not specified then an empty object is used.
+4. **props** - As described in for `base`, when the 'context' option isn't specified the default context is built with this option as the second arg to `Object.create(base, props)`. When not specified then `undefined` is passed.
 
-### API: chain.select(function)
+Returns an object with properties:
+
+1. **result** - true/false depending on success
+2. **context** - the final context object. It may be the default one created, the one specified in the first parameter, or one provided by a function as a "permanent override".
+3. **chain** - the chain. May seem weird to provide it, but, the same "result" is provided to the "done" callback and that may be added to more than one chain.
+4. **paused** / **stopped** / **failed** - when a function calls [pause()](#api-control-pause), [stop()](#api-control-stop), or [fail()](#api-control-fail) then their corresponding property contains:
+
+  1. **reason** - the `reason` provided to the call, or, true
+  2. **index** - the index of the function in the chain which called it
+  3. **fn** - the function in the chain which called it
+
+5. **failed** - as described above, and, it may have an additional property **error** with an `Error` instance caught during execution.
+6. **removed** - an array of functions removed via `control.remove()` during the execution
+
+Keep in mind, the returned object may not have the final contents when `control.pause()` is used because it receives back what's available up to the pause point.
+
+
+### API: chain.add()
+
+Add functions to the end of the chain's array.
+
+Parameters:
+
+* all parameters may be a function and they will be grouped in an array and used in the chain
+* parameter may be an array. each element will be checked to ensure they are all functions otherwise an object is returned with an `error` property. they are added to the end of the chain's array.
+
+Returns:
+
+An object is returned with a `result` property which has a `true` value for success, and an `added` property containing an array of all functions added.
+
+Event:
+
+An `add` event is emitted with the same object described in the "Returns" section above.
+
+
+### API: chain.remove()
+
+Remove functions from the chain's array.
+
+Parameters:
+
+1. the first parameter may have three different types:
+  * A **number** is used as an index into the array specifying which function to remove. If the index is invalid then an object is returned with an `error` property saying the index is invalid.
+  * A **function** is used as the function to remove. The array is searched for the function. If it is found it is removed.
+  * A **string** is used as the `id` of the function to remove. A function's `id` is in its `options` object. If a function with the id is found then it is removed.
+2. the second parameter is optional and may be anything you want. It is the "reason" for doing the removal. The "reason" is included in the return results and in the object provided to the 'remove' event.
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when it couldn't be found to remove
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **removed** - an array containing the functions which were removed
+
+Event:
+
+A `remove` event is emitted with the same object described above as the return object.
+
+
+### API: chain.clear()
+
+Removes all functions from the chain and emits a `clear` event containing the removed functions.
+
+If the chain is already empty then the return, and the emitted event, will have a false `result` and `reason` 'chain is empty'.
+
+
+### API: chain.disable()
+
+Disable the entire chain or a specific function in the chain.
+
+A disabled chain will not `run()`. If `run()` is called it will return an object with `result=false`, `reason` will be 'chain disabled', and `disabled` will be the reason it was disabled.
+
+A disabled function will be skipped during an execution run.
+
+Parameters for disabling the entire chain:
+
+1. this optional param is the reason for disabling the chain.
+2. there's no second param when disabling the entire chain.
+
+Parameters for disabling a single function:
+
+1. a required value used to specify which function to disable. Read about these three types above in [chain.remove()](#api-chain-remove).
+2. the second param is normally optional, but, because `disable()` may also apply to the chain itself, we must differentiate `chain.disable(reasonString)` from `chain.disable(functionIdString)`. So, if the first param is a number or a function then this second param is options. If the first param is a string representing the `id` of a function, then, you **must** provide this second arg. If you don't care about its value, simply specify `true`.
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when the function couldn't be found to disable
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **chain** - if the chain is disabled then it is included in the result
+4. **fn** - if a funciton is removed then it is included in the result
+
+Event:
+
+A `disable` event is emitted containing the same result object as the return object described above.
+
+
+### API: chain.enable()
+
+Enable the entire chain or a specific function in the chain.
+
+Parameters:
+
+1. the only parameter is determines whether to enable the chain or a function, and, which function to enable. No first parameter means enable the whole chain. Otherwise, the first param can have three types. Read about these three types above in [chain.remove()](#api-chain-remove).
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when the function couldn't be found to disable
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **chain** - if the chain is disabled then it is included in the result
+4. **fn** - if a funciton is removed then it is included in the result
+
+Note, if the target is not disabled then the return result will be `false` and contain the `reason` 'chain not disabled' or 'function not disabled'.
+
+Event:
+
+A `enable` event is emitted containing the same result object as the return object described above.
+
+Note, if the target is **not disabled** then no `enable` event will be emitted.
+
+
+### API: chain.select()
+
+Provide a function to select functions in the chain to apply a sub-operation to.
+
+Parameters:
+
+1. The first parameter is the only one. It must be a function which returns true for a function to include, and false for exclude.
+
+Returns:
+
+An object with four sub-operation functions available:
+
+1. **remove** - same as the `chain.remove()` function described above except called with each the selected function as the first parameter and the sub-operation's parameters provided as the second, and later, parameters. The first parameter of this `remove()` is the `reason` for the removal. It is optional.
+2. **disable** - same as described for `remove` except for the `chain.disable()` function.
+3. **enable** - same as described for `remove` except for the `chain.enable()` function.
+4. **affect** - a special sub-operation which doesn't provide the sub-operation's action function. You provide that as the first parameter of this `affect()` call.
+
+The function provided to `select()` receives two parameters:
+
+1. the function it must choose to include or exclude
+2. the index in the chain's array where the function is
+
+Example:
+
+```javascript
+function selector(fn, index) {
+  return (/* something you care about on the function or the index */);
+  // (index == 3)
+  // (fn.options && fn.options.id == 'someid')
+  // (fn.options && fn.options.tags && fn.options.tags.indexOf('sometag') > -1)
+}
+
+// this `select` is reusable.
+var select = chain.select(selector);
+
+// call the sub-operation with optional args
+select.remove('some reason');
+select.disable('any reason');
+select.enable('blah reason');
+
+// the affect() function is special. you provide another function:
+select.affect(function(fn, index) {
+  // do something with to/with the function...
+});
+```
 
 
 ## API: Control
@@ -892,8 +1142,6 @@ May also provide an array as an argument.
 ### API: control.fail(reason:String)
 
 ### API: control.disable()
-
-### API: control.enable()
 
 ### API: control.remove()
 
