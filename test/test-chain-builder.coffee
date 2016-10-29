@@ -471,7 +471,7 @@ describe 'test running chain', ->
     chain.add theFn
 
     results = chain.run()
-    
+
     assert results, 'should return results'
     assert.equal results.result, false, 'results should contain the result'
     assert.strictEqual results.failed?.error, theError, 'result should contain the `error`'
@@ -577,6 +577,160 @@ describe 'test running chain', ->
       assert result.failed, 'should have `failed` info'
       assert.equal result.failed.reason, 'testing'
       assert.strictEqual result.failed.fn, fn2, 'should have fn2 as the stopping `fn`'
+
+    it 'should allow next() to do work afterwards', ->
+      calls = []
+      first = -> calls.push 'first'
+      nexter = (control) ->
+        calls.push 'nexter: pre-next()'
+        result = control.next()
+        calls.push 'nexter: post-next()'
+        return result
+      last = -> calls.push 'last'
+
+      chain.add first, nexter, last
+      results = chain.run()
+
+      assert results.result, 'should have successful result'
+      assert.equal calls.length, 4, 'should call each function, and nexter twice'
+      assert.deepEqual calls, [ 'first', 'nexter: pre-next()', 'last', 'nexter: post-next()' ]
+
+    it 'should allow next() to do work afterwards, and temporarily override context', ->
+      mainContext = temp:false
+      tempContext = temp:true
+      calls = []
+      first = ->
+        @first = true # goes into the main context
+        calls.push 'first'
+
+      third = ->
+        @third = true # goes into the tempContext
+        calls.push 'third'
+
+      last = ->
+        @last = true # goes into the mainContext
+        calls.push 'last'
+
+      nexter = (control) ->
+        @nexter = true
+        calls.push 'nexter: pre-next()'
+
+        result = control.next tempContext
+
+        calls.push 'nexter: post-next()'
+
+        return result
+
+      chain.add first, nexter, third, last
+      results = chain.run context:mainContext
+
+      assert results.result, 'should have successful result'
+      assert.equal calls.length, 5, 'should call each function, and nexter twice'
+      assert.deepEqual calls, [
+        'first', 'nexter: pre-next()', 'third', 'last', 'nexter: post-next()'
+      ]
+      assert.strictEqual results.context, mainContext
+      assert mainContext.first, 'first function should get mainContext'
+      assert mainContext.nexter, 'nexter function should get mainContext'
+      assert tempContext.third, 'third function should get tempContext'
+      assert mainContext.last, 'last function should get mainContext'
+
+    it 'should allow next() to do work afterwards, and permanently override context', ->
+      mainContext = override:false
+      newContext = override:true
+      calls = []
+      first = ->
+        @first = true # goes into the main context
+        calls.push 'first'
+
+      third = ->
+        @third = true # goes into the newContext
+        calls.push 'third'
+
+      last = ->
+        @last = true # goes into the newContext
+        calls.push 'last'
+
+      nexter = (control) ->
+        @nexter = true
+        calls.push 'nexter: pre-next()'
+
+        result = control.next newContext, true
+
+        calls.push 'nexter: post-next()'
+
+        return result
+
+      chain.add first, nexter, third, last
+      results = chain.run context:mainContext
+
+      assert results.result, 'should have successful result'
+      assert.equal calls.length, 5, 'should call each function, and nexter twice'
+      assert.deepEqual calls, [
+        'first', 'nexter: pre-next()', 'third', 'last', 'nexter: post-next()'
+      ]
+      assert.strictEqual results.context, newContext, 'the original context is replaced permanently'
+      assert results.context.override, 'should be the override one'
+      assert mainContext.first, 'first function should get original context'
+      assert mainContext.nexter, 'nexter function should get original context'
+      assert newContext.third, 'third function should get override context'
+      assert newContext.last, 'last function should get override context'
+
+
+    it 'should allow next() to do work afterwards, twice', ->
+      calls = []
+      first = -> calls.push 'first'
+      nexter = (control) ->
+        calls.push 'nexter: pre-next()'
+        result = control.next()
+        calls.push 'nexter: post/pre-next()'
+        result = control.next()
+        calls.push 'nexter: post-next()'
+        return result
+      last = -> calls.push 'last'
+
+      chain.add first, nexter, last
+      results = chain.run()
+
+      assert results.result, 'should have successful result'
+      assert.equal calls.length, 6, 'should call first once, nexter 3 times, and last twice'
+      assert.deepEqual calls, [
+        'first', 'nexter: pre-next()', 'last',
+        'nexter: post/pre-next()', 'last',
+        'nexter: post-next()'
+      ]
+
+    it 'should allow next() to do work afterwards, twice', ->
+      calls = []
+      first = -> calls.push 'first'
+      nexter = (control) ->
+
+        calls.push 'nexter: pre-next()'
+        result = control.next()
+
+        calls.push 'nexter: post/pre-next()'
+        result = control.next()
+
+        calls.push 'nexter: post/pre-next()'
+        result = control.next()
+
+        calls.push 'nexter: post-next()'
+
+        return result
+
+      last = -> calls.push 'last'
+
+      chain.add first, nexter, last
+      results = chain.run()
+
+      assert results.result, 'should have successful result'
+      assert.equal calls.length, 8, 'should call first once, nexter 4 times, and last 3 times'
+      assert.deepEqual calls, [
+        'first', 'nexter: pre-next()', 'last',
+        'nexter: post/pre-next()', 'last',
+        'nexter: post/pre-next()', 'last',
+        'nexter: post-next()'
+      ]
 
   # b. async
   # TODO: really, the above tests using control.next() are async-ish...
