@@ -29,6 +29,13 @@ module.exports = class Chain extends require('events').EventEmitter
     # an array of functions, so simple, until you wrap a Chain around it...
     @array = array
 
+    # store the base of the context object (optional)
+    @_base = options?.base
+
+    # when a new context builder is specified then move default one to new prop
+    if options?.buildContext?
+      @_originalBuildContext = @_buildContext
+      @_buildContext = options.buildContext
 
   # add functions to the array:
   #  chain.add fn
@@ -433,4 +440,10 @@ module.exports = class Chain extends require('events').EventEmitter
     # otherwise, build a new context.
     # use their specified prototype or an empty object,
     # and a property descriptor (if specified)
-    else Object.create options?.base ? {}, options?.props
+    else
+      # get the base:
+      #  1. from options which overrides everything
+      #  2. from the chain's options
+      #  3. the default is an empty object
+      base = options?.base ? @_base ? {}
+      Object.create base, options?.props
