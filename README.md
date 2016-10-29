@@ -42,9 +42,10 @@ A. Usage
 
 B. Executing a Chain
 
-  1. [Control](#execution-control)
-  2. [Flow Styles](#execution-flow-styles)
-  3. [Context or This?](#execution-use-context-or-this-)
+  1. [Events](#execution-events)
+  2. [Control](#execution-control)
+  3. [Flow Styles](#execution-flow-styles)
+  4. [Context or This?](#execution-use-context-or-this-)
 
 C. [Examples](#examples)
 
@@ -360,6 +361,22 @@ result = {
 2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
 3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
 4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+
+
+### Execution: Events
+
+The chain emits these events:
+
+1. **add** -  when functions are added to the chain
+2. **remove** - when functions are removed from the chain
+3. **start** - when a chain execution starts
+4. **pause** - when `control.pause()` is called
+5. **resume** - when the `resume` function, returned from `control.pause()`, is called
+6. **stop** - when `control.stop()` is called
+7. **fail** - when `control.fail()` is called
+8. **disable** - when `control.disable()` or `chain.disable()` is called
+9. **enable** - when `chain.enable()` is called *and* its target actually needed enabling
+10. **done** - when the chain is done executing because all functions have been run, or, because stop/fail were called
 
 
 ## Execution: Control
@@ -854,7 +871,7 @@ overrideContext = {
 
 ## API
 
-### API: exported builder function
+### API: Exported Builder Function
 
 The module exports a single "builder" function. It accepts one parameter which can be various types. It returns a new `Chain` instance.
 
@@ -1071,7 +1088,7 @@ An object with properties:
 1. **result** - true for success, false when the function couldn't be found to disable
 2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
 3. **chain** - if the chain is disabled then it is included in the result
-4. **fn** - if a funciton is removed then it is included in the result
+4. **fn** - if a function is removed then it is included in the result
 
 Note, if the target is not disabled then the return result will be `false` and contain the `reason` 'chain not disabled' or 'function not disabled'.
 
@@ -1131,35 +1148,114 @@ select.affect(function(fn, index) {
 
 ## API: Control
 
+Each `chain.run()` execution creates a new `Control` instance to oversee it and provide functionality to the functions being executed.
+
+It's **not required** to make use of the `control`. Each function can ignore it and the sequential execution of the chain's functions will happen.
+
+
 ### API: control.next()
 
-### API: control.context(Object)
+Use `next()` **only** if you want to do work both **before and after** the later functions have run through. This is the "pipeline" or "filter" pattern because it allows a function to alter what's provided to the later functions and then do something with the results after they've run. That wouldn't be possible if it was only first or only last.
 
-### API: control.pause(reason:String)
+Parameters:
 
-### API: control.stop(reason:String)
+1. **context** - optionally specify a new context object for the next function(s)
+2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final result returned back to `next()`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
 
-### API: control.fail(reason:String)
+Returns:
+
+A final results object like what [chain.run()](#api-chain-run) receives.
+
+Examples:
+
+```javascript
+function worker(control) {
+  // do some pre work
+
+  // maybe put something into the context, or, change some values.
+  this.something = 'new value'
+
+  // call the others:
+  var result = control.next();
+
+  // do some post work
+}
+
+function overridingWorker(control) {
+  // do some pre work
+
+  // like, create a new context for the others to use
+  var newContext = { override: 'context' };
+
+  // then call the rest of the functions.
+  var result = control.next(newContext, true);
+
+  // do some post work
+}
+
+function retryWorker(control) {
+  var result = control.next();
+
+  // if there's something worth retrying, call next again
+  if (result.failed && result.failed.reason == 'some retry-able reason') {
+    result = control.next();
+  }
+}
+```
+
+
+### API: control.context()
+
+Temporarily change the context given to the next function, or, permanently change the context for all subsequent functions and make it part of the final results.
+
+Parameters:
+
+1. **context** - optionally specify a new context object for the next function(s)
+2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final result`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
+
+Returns:
+
+Returns undefined.
+
+Examples:
+
+```javascript
+// only the next function called will receive the tempContext.
+function tempOverrider(control) {
+  var tempContext = { temp: 'context' };
+  control.context(tempContext);
+}
+
+// this will change the context stored in the Control permanently
+function overrider(control) {
+  var newContext = { replacment: 'context' };
+  control.context(newContext);
+}
+```
+
+
+### API: control.pause()
+
+
+
+
+### API: control.stop()
+
+
+
+
+### API: control.fail()
+
+
+
 
 ### API: control.disable()
 
+
+
+
 ### API: control.remove()
 
-
-### API: Events
-
-The chain emits these events:
-
-1. add: when functions are added to the chain
-2. remove: when functions are removed from the chain
-3. start: when a chain execution starts
-4. pause: when `control.pause()` is called
-5. resume: when the `resume` function, returned from `control.pause()`, is called
-6. stop: when `control.stop()` is called
-7. fail: when `control.fail()` is called
-8. disable: when `control.disable()` or `chain.disable()` is called
-9. enable: when `chain.enable()` is called *and* its target actually needed enabling
-10. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
 
 
 ## MIT License
