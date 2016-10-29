@@ -83,10 +83,9 @@ E. [API](#api)
     * [control.fail()](#api-controlfail)
     * [control.disable()](#api-controldisable)
     * [control.remove()](#api-controlremove)
-    * [resume()](#api-resume)
-    * [resume.callback()](#api-resumecallback)
 
 F. [MIT License](#mit-license)
+
 
 ## Usage: Basic
 
@@ -1236,26 +1235,239 @@ function overrider(control) {
 
 ### API: control.pause()
 
+Asynchronous execution is possible using `control.pause()` to retrieve a `resume()` function. The chain will wait until that function is called to begin executing again.
 
+There is an additional helper function on the returned `resume` function named `callback`. Use that to create a resume callback which accepts the standard parameters `(error, result)` and handles calling `control.fail()` with an error message and the error, or, setting the `result` into the context for you.
+
+Parameters:
+
+1. **reason** - optionally specify a reason for pausing so it's available.
+
+Returns:
+
+A function which, when called (no params), will resume execution of the chain. Has a `callback` property which is another function to create an `(error, result)` style callback function which handles those for you.
+
+Callback helper Parameters:
+
+1. optional error message which will be passed to `control.fail()` if an error occurs. Defaults to "ERROR".
+2. optional property name (result key) to set the result into the `context` with. Defaults to "result".
+
+Examples:
+
+A simple use of the resume function:
+
+```javascript
+function simpleResume(control) {
+  var resume = control.pause('wait for a bit');
+  // resume in a little bit...
+  setTimeout(resume, 1234);
+}
+```
+
+Using `resume()` within a callback:
+
+```javascript
+function worker(control, context) {
+  var resume = control.pause('because i said so');
+
+  fs.readFile('./some/file.ext', 'utf8', function callback(error, content) {
+    if (error) {
+      control.fail('Failed to read config file', error);
+    } else {
+      context.fileContent = content;
+    }
+
+    // always call resume()
+    resume()
+  });
+}
+```
+
+Using the `resume.callback()` for the same results:
+
+```
+function worker(control) {
+  var resume = control.pause('because i said so'),
+    , callback = resume.callback('Failed to read config file', 'fileContent');
+
+  fs.readFile('./some/file.ext', 'utf8', callback);
+}
+
+// let's look at what an error would look like as well as success
+function onDone(error, result) {
+  if (error) {
+    // the `error` will be the `failed` object like:
+    error = {
+      reason : 'Failed to read config file' // message given to resume.callback
+      , index: 0      // worker was first in the array
+      , fun  : worker // the worker function
+    }
+
+    // the `result` will always exist, error or not.
+    // if there was an error, the result is:
+    result = {
+      result : false
+      , chain: // the chain
+      , context: {} // the context (which we didn't do anything to)
+      , failed: { /* this is the error object described above */ }
+    }
+
+  } else {
+    // if there was no error then the result is:
+    result = {
+      result   : true
+      , chain  : // the chain
+      , context: {}
+    }
+  }
+}
+
+// leave out other common stuff for brevity... imagine we setup a chain
+var result = chain.run({}, onDone);
+
+// when pause() was called it returns that info to the `result` here.
+result = {
+  paused: {
+    reason : 'because i said so' // reason provided to pause()
+    , index: 0                   // worker function was first in array
+    , fn   : worker              // our worker function
+  }
+};
+
+// the result provided to the `done` callback
+```
 
 
 ### API: control.stop()
 
+Stops executing the chain and returns a **success** result with the reason provided to `stop()`.
 
+Note, this is for **early termination** of an execution. Not for an error. When there's an error, use [control.fail()](#api-controlfail).
+
+
+Parameters:
+
+1. **reason** - optionally specify a reason for stopping so it's in the results.
+
+Returns:
+
+`true`. Yup, that's it. :)
+
+Example:
+
+```javascript
+function stopper(control) {
+  if (this.somethingMeaningWeAreDone) {
+    return control.stop('we have what we need');
+  }
+}
+
+// the final result:
+result = {
+  result: true  // true because a stop() is still a success
+  , chain: // the chain
+  , stopped: { // when stop() is called this object is in results
+    reason : 'we have what we need' // message supplied to stop()
+    , index: 0       // the index of the stopper function in the chain
+    , fn   : stopper // the function which called stop()
+  }
+};
+```
 
 
 ### API: control.fail()
 
+Stops executing the chain and returns a **failure** result with the reason provided to `fail()`.
 
+Note, this is for an error during execution. If you want to simply stop execution then use [control.stop()](#api-controlstop).
+
+Parameters:
+
+1. **reason** - optionally specify a reason for failing so it's in the results.
+
+Returns:
+
+`false`. Yup, that's it. :)
+
+Example:
+
+```javascript
+function failer(control) {
+  if (this.somethingBad) {
+    return control.fail('the sky is falling!');
+  }
+}
+
+// the final result:
+result = {
+  result: false
+  , chain: // the chain
+  , failed: { // when fail() is called this object is in results
+    reason : 'the sky is falling!' // message supplied to stop()
+    , index: 0      // the index of the stopper function in the chain
+    , fn   : failer // the function which called fail()
+  }
+};
+```
 
 
 ### API: control.disable()
 
+Disables the currently executing function. It will be skipped during execution runs until it is enabled.
 
+This allows functions to disable themselves without resorting to calling `chain.disable()` with its necessary params.
+
+Parameters:
+
+1. **reason** - optionally specify a reason for disabling. Defaults to `true`.
+
+Returns:
+
+The same object as described above in [chain.disable()](#api-chaindisable).
+
+Examples:
+
+```javascript
+function disabler(control) {
+  return control.disable('I\'ve had enough for now.');
+}
+```
 
 
 ### API: control.remove()
 
+Removes the currently executing function.
+
+This allows functions to remove themselves without resorting to calling `chain.remove()` with its necessary params.
+
+When a function is removed this way its removal is recorded by the Control and it will be in the final results.
+
+Parameters:
+
+1. **reason** - optionally specify a reason for removing the function. Defaults to `true`.
+
+Returns:
+
+`true`, Yup, that's it.
+
+Examples:
+
+```javascript
+function quitter(control) {
+  return control.remove('I quit.');
+}
+
+// the final result will contain functions which removed during the
+// execution run:
+result = {
+  result  : true // assuming it's a successful run
+  , chain :      // the chain
+  , context: {}  // the final context..
+  , removed: [
+    quitter // the function which removed itself via control.remove()
+  ]
+};
+```
 
 
 ## MIT License
