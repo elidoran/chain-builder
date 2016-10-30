@@ -425,7 +425,7 @@ describe 'test chain.clear()', ->
     assert.equal chain.array.length, 0, 'array should be empty before clear()'
     result = chain.clear()
     assert.equal chain.array.length, 0, 'array should be empty'
-    assert.equal result.result, false
+    assert.equal result.result, true
     assert.equal result.reason, 'chain empty'
     assert.strictEqual result.removed, undefined, 'result shouldnt have any removed'
 
