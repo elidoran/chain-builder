@@ -1114,8 +1114,8 @@ result = {
 // if a function is specified and it isn't found, either by itself ref, or
 // by its id, then the result is:
 result = {
-  result: false,
-  reason: 'not found'
+  result: false
+  , reason: 'not found'
 }
 
 // if an invalid value is specified then an error is returned:
@@ -1291,11 +1291,11 @@ result = {
 
 // if the function or chain is NOT disabled:
 result = {
-  result: false
+  result  : false
   // for enable()
-  , reason = 'chain not disabled'
+  , reason: 'chain not disabled'
   // for enable(which)
-  , reason = 'function is not disabled'
+  , reason: 'function is not disabled'
 }
 ```
 
