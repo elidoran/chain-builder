@@ -1,5 +1,12 @@
 
-0.10.0 - 2016/10/27
+0.10.0 - 2016/10/29
+
+This was a large effort to add in all the remaining design features I had planned.
+Also, as the test suite was completed it brought out some things to change.
+And, as the README was completed it highlighted changes to make as well.
+So, there are many changes going to 0.10.0.
+
+I am planning on releasing this as version 1.0.0 once I've done some play testing in other work.
 
 1. split `index` into three files. Put `Chain` and `Control` into two of them. Retain the builder function in `index`.
 2. add validation in the Chain constructor. skip it when the builder function has already done it.
@@ -13,8 +20,16 @@
 10. remember results of `select()` action operations (such as `disable()`) and include in returned results
 11. added missing API documentation to README
 12. wrote a new README with JavaScript (ES5) code
-13. add `resume.callback()` helper to apply the `resume` to standard callback pattern `(error, result)`
-14. added tests for resume callback
+13. made separate JS5 and CS README files
+14. add `resume.callback()` helper to apply the `resume` to standard callback pattern `(error, result)`
+15. added tests for resume callback
+16. changed `clear()` on an empty array to return a `true` success result
+17. `control.remove()` now returns true
+18. execution loop will call `control.fail()` when an error is caught
+19. changed `control.context()` to *not* call `_execute()` itself. Instead, it simply returns and allows the execution loop to use the context, either temporary or permanent.
+20. changed `control.next()` to also accept a new temporary/permanent context.
+21. improved `control.next()` to be reentrant allowing a function to cause another execution from where it is in the array. This allows retry style behavior.
+
 
 0.9.1 - 2016/10/23
 
