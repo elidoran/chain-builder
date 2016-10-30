@@ -13,9 +13,9 @@ Some of the features:
 4. "waterfall" - uses a `context` object which is provided to each function in sequence. accepts one for the initial call (unlike `async.waterfall()`). It's different than providing the output to the next function as input, however, it can achieve the same results, and, it's possible to provide an entirely new object to each subsequent function.
 5. "pipeline/filter" - a series of functions which call the next one, can override the input, can do work after the later functions return
 6. accepts a `done` callback and sends the error or result to it
-7. can *pause* the chain and use a callback to *resume* it; which supports asynchronous execution
-8. can *stop* the chain early as a success; accepts a `reason`
-9. can *fail* the chain execution as an error; accepts a `reason`
+7. can *pause* the chain and use a callback to *resume* it which supports asynchronous execution
+8. can *stop* the chain early as a success accepts a `reason`
+9. can *fail* the chain execution as an error accepts a `reason`
 10. the context provided to each function is also the *this*, unless overridden via an option
 11. the *this* can be overridden per function via an options object on the function (better than bind because it uses a single `call()` instead of two)
 12. can override the context used by the next function (which can choose to pass that one on, or, allow the default context to be restored), and, can override the default context used by all future functions and is returned in the final result.
@@ -43,9 +43,10 @@ A. Usage
 
 B. Executing a Chain
 
-  1. [Control](#execution-control)
-  2. [Flow Styles](#execution-flow-styles)
-  3. [Context or This?](#execution-use-context-or-this-)
+  1. [Events](#execution-events)
+  2. [Control](#execution-control)
+  3. [Flow Styles](#execution-flow-styles)
+  4. [Context or This?](#execution-use-context-or-this-)
 
 C. [Examples](#examples)
 
@@ -136,7 +137,7 @@ For simpler functions there's no need to use either function params, use `this`.
       @message += ' there'  # makes `message` = 'Hello there'
 
     fn2 = () ->
-      @message += ', Bob';   # makes message = 'Hello there, Bob'
+      @message += ', Bob'   # makes message = 'Hello there, Bob'
 
     fn3 = () ->
       # writes full message to console
@@ -252,7 +253,7 @@ Maybe we don't want this one right now while running some initial warmups. We'll
 Let's say we had a function written to be run on a different object so normally we would `bind()` it. Bind causes two function calls. So, instead, `chain-builder` allows you to specify what to bind it to as an option on it. Then, it's used when chain-builder calls it. so, one function call.
 
     notBoundFn = someObject.someFunction
-    notBoundFn.options = { this: someObject };
+    notBoundFn.options = { this: someObject }
 
 Example of a function performing a temporary override of the context:
 
@@ -360,6 +361,22 @@ Lastly, remember all the events emitted from chain allow configuring lots of lis
 2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
 3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
 4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+
+
+### Execution: Events
+
+The chain emits these events:
+
+1. add: when functions are added to the chain
+2. remove: when functions are removed from the chain
+3. start: when a chain execution starts
+4. pause: when `control.pause()` is called
+5. resume: when the `resume` function, returned from `control.pause()`, is called
+6. stop: when `control.stop()` is called
+7. fail: when `control.fail()` is called
+8. disable: when `control.disable()` or `chain.disable()` is called
+9. enable: when `chain.enable()` is called *and* its target actually needed enabling
+10. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
 
 
 ## Execution: Control
@@ -787,63 +804,738 @@ Here is an example of a permanent override:
 
 ## API
 
-### API: exported builder function
+### API: Exported Builder Function
 
-Options:
+The module exports a single "builder" function. It accepts one parameter which can be various types. It returns a new `Chain` instance.
 
-1. array
-2. contextBase - used in default context builder
-3. buildContext - overrides context builder
+#### Parameter can be:
+
+* **function** - a single function to put into the chain
+* **array** - an array containing functions to put into the chain. The array contents are validated immediately and an object with an 'error' property is returned if the array contains anything other than functions.
+* **object** - an object containing any of the below "options"
+
+#### Options:
+
+* **array** - the "array" described above as a parameter.
+* **base** - used in the default context builder as the first param to `Object.create()`
+* **props** - used in the default context builder as the second param to `Object.create()`
+* **buildContext** - overrides the context builder. It is described below with an example.
+
+#### Use the base or props options
+
+The `base` and `props` are used in `Object.create(base, props)` to build the default context object. You may provide functions, or anything you could specify in an object's `prototype`. This allows adding helper functions and constants to the `context` object.
+
+#### Example:
+
+    worker = (control, context) ->
+      context.num = context.sum context.num, 456
+
+    base =
+        num: 123
+        sum: (a, b) -> a + b
+
+    runOptions = base: base
+
+    result = chain.run runOptions
+
+    # results ...
+    result = {
+      result : true
+      chain  : # the chain...
+      context:
+        num: 579  # sum of 123 and 456
+        # no `sum` because that's a prototype property.
+        # do `delete context.num` and then `context.num` you'd get: 123
+
+
+#### Override the Context Builder Function
+
+The `buildContext` option, the "context builder", is a function accepting the "options" object provided to `chain.run()` and returning the object to use as the `context` for that execution run. If the `options` object contains a `context` property then it should return that object, but, it may alter it before doing so.
+
+#### Example:
+
+    buildChain = require 'chain-builder'
+    SomeClass  = require 'some-module'
+
+    # this is the kind of function you'd provide as `buildContext` in options.
+    contextBuilder = (options) ->
+      if options?.context? then options.context
+      # the options are from `chain.run options`
+      else new SomeClass options.someOptions ? {}
+
+    worker = (control, context) ->
+      # the `context` is the instance of SomeClass.
+      something = context.useSomeFunction()
+      context.doSomethingElse()
+
+    chain = buildChain buildContext:contextBuilder, array:[ worker ]
+    runOptions = someOptions: example:'value'
+    result = chain.run runOptions
+
+    # result...
+    result = {
+      result : true
+      chain  : # the chain
+      context: # the instance of SomeClass
+
 
 ## API: Chain
 
-### API: chain.run(options:Object[, done:Function])
+### API: chain.run()
 
-### API: chain.add(fn[, fn]*)
+Primary function which performs a single execution of all functions in the chain.
 
-May also provide an array as an argument.
+Parameters:
 
-### API: chain.remove(index:number | id:string)
+1. **options** - object containing the below options
+2. **done** - an optional callback function added as a listener to the 'done' event.
 
-### API: chain.disable(index:number | id:string | function)
+Options Parameter:
 
-### API: chain.enable(index:number | id:string | function)
+1. **done** - the 'done' callback function added as a listener to the 'done' event
+2. **context** - the context object provided to each function
+3. **base** - when the `context` option isn't specified then `chain` will build a context object using `chain._buildContext()`. That uses `Object.create(base, props)` to build the object. The `base` option will be used there. When not specified then an empty object is used.
+4. **props** - As described in for `base`, when the 'context' option isn't specified the default context is built with this option as the second arg to `Object.create(base, props)`. When not specified then `undefined` is passed.
 
-### API: chain.select(function)
+Returns an object with properties:
+
+1. **result** - true/false depending on success
+2. **context** - the final context object. It may be the default one created, the one specified in the first parameter, or one provided by a function as a "permanent override".
+3. **chain** - the chain. May seem weird to provide it, but, the same "result" is provided to the "done" callback and that may be added to more than one chain.
+4. **paused** / **stopped** / **failed** - when a function calls [pause()](#api-controlpause), [stop()](#api-controlstop), or [fail()](#api-controlfail) then their corresponding property contains:
+
+  1. **reason** - the `reason` provided to the call, or, true
+  2. **index** - the index of the function in the chain which called it
+  3. **fn** - the function in the chain which called it
+
+5. **failed** - as described above, and, it may have an additional property **error** with an `Error` instance caught during execution.
+6. **removed** - an array of functions removed via `control.remove()` during the execution
+
+Keep in mind, the returned object may not have the final contents when `control.pause()` is used because it receives back what's available up to the pause point.
+
+Examples:
+
+    # use default context, no done callback.
+    result = chain.run()
+
+    # override the context
+    result = chain.run context:{}
+
+    # and provide a done callback as second arg
+    result = chain.run { context:{} }, (error, result) ->
+
+    # put done callback into run options (first arg)
+    result = chain.run context:{}, done: (error, result) ->
+      # on done do this...
+
+    # provide a `base`, prototype, for the context
+    result = chain.run base:someProtoObject
+
+    # provide both a `base`, prototype, and a props description for the context
+    # see documentation for Object.create(base, props) ...
+    result = chain.run base:someProtoObject, props:somePropsDesc
+
+    # override the context builder completely
+    # see examples above in the chain builder docs.
+    result = chain.run buildContext: (options) -?
+      # get context from options, or create it here...
+
+
+### API: chain.add()
+
+Add functions to the end of the chain's array.
+
+Parameters:
+
+* all parameters may be a function and they will be grouped in an array and used in the chain
+* parameter may be an array. each element will be checked to ensure they are all functions otherwise an object is returned with an `error` property. they are added to the end of the chain's array.
+
+Returns:
+
+An object is returned with a `result` property which has a `true` value for success, and an `added` property containing an array of all functions added.
+
+Event:
+
+An `add` event is emitted with the same object described in the "Returns" section above.
+
+Examples:
+
+    # add a single function
+    chain.add fn1)
+
+    # add multiple functions
+    chain.add fn1, fn2, fn3
+
+    # add using an array
+    chain.add [ fn1, fn2, fn3 ]
+
+
+### API: chain.remove()
+
+Remove functions from the chain's array.
+
+Parameters:
+
+1. the first parameter may have three different types:
+  * A **number** is used as an index into the array specifying which function to remove. If the index is invalid then an object is returned with an `error` property saying the index is invalid.
+  * A **function** is used as the function to remove. The array is searched for the function. If it is found it is removed.
+  * A **string** is used as the `id` of the function to remove. A function's `id` is in its `options` object. If a function with the id is found then it is removed.
+2. the second parameter is optional and may be anything you want. It is the "reason" for doing the removal. The "reason" is included in the return results and in the object provided to the 'remove' event.
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when it couldn't be found to remove
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **removed** - an array containing the functions which were removed
+
+Event:
+
+A `remove` event is emitted with the same object described above as the return object.
+
+Examples:
+
+    # remove a function via its index.
+    # this removes the third function.
+    result = chain.remove 2
+
+    # remove a function via itself
+    result = chain.remove fn1
+
+    # remove using the function's `id`
+    # function must have an `options` property,
+    # which is an object, and it must have an `id` property of 'theid'
+    result = chain.remove 'theid'
+
+    # provide a reason as the second arg for any of the above types:
+    result = chain.remove whichever, 'some reason'
+
+    # if a removal is successful the result is:
+    result =
+      result : true
+      reason : true # the reason provided, or `true` by default
+      removed: [ ]  # array containing the removed function
+
+    # if an invalid index is used then the result is:
+    result =
+      result: false
+      reason: 'Invalid index: 0' # zero would be the actual index specified
+
+    # if a function is specified and it isn't found, either by itself ref, or
+    # by its id, then the result is:
+    result =
+      result: false
+      reason: 'not found'
+
+    # if an invalid value is specified then an error is returned:
+    # (anything other than: number, string, and function)
+    result =
+      result: false
+      reason: 'Requires a string (ID), an index, or the function'
+      which : # the thing given to the remove() call
+
+
+### API: chain.clear()
+
+Removes all functions from the chain and emits a `clear` event containing the removed functions.
+
+If the chain is already empty then the return, and the emitted event, will have a false `result` and `reason` 'chain is empty'.
+
+Example:
+
+    result = chain.clear()
+
+    result =
+      result : true
+      removed: [ ] # all the functions removed will be in the array...
+      # if array was already empty then it'll have:
+      reason : 'chain empty'
+
+
+### API: chain.disable()
+
+Disable the entire chain or a specific function in the chain.
+
+A disabled chain will not `run()`. If `run()` is called it will return an object with `result=false`, `reason` will be 'chain disabled', and `disabled` will be the reason it was disabled.
+
+A disabled function will be skipped during an execution run.
+
+Parameters for disabling the entire chain:
+
+1. this optional param is the reason for disabling the chain.
+2. there's no second param when disabling the entire chain.
+
+Parameters for disabling a single function:
+
+1. a required value used to specify which function to disable. Read about these three types above in [chain.remove()](#api-chainremove).
+2. the second param is normally optional, but, because `disable()` may also apply to the chain itself, we must differentiate `chain.disable(reasonString)` from `chain.disable(functionIdString)`. So, if the first param is a number or a function then this second param is options. If the first param is a string representing the `id` of a function, then, you **must** provide this second arg. If you don't care about its value, simply specify `true`.
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when the function couldn't be found to disable
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **chain** - if the chain is disabled then it is included in the result
+4. **fn** - if a funciton is removed then it is included in the result
+
+Event:
+
+A `disable` event is emitted containing the same result object as the return object described above.
+
+Examples:
+
+    # disable the entire chain.
+    result = chain.disable()
+    result =
+      result: true
+      reason: true # reason defaults to `true`
+      chain : # the chain
+
+    # disable the entire chain with a reason
+    result = chain.disable 'some reason'
+    result =
+      result: true
+      reason: 'some reason' # reason specified
+      chain : # the chain
+
+
+    # disable a specific function
+    # there are three different ways to specify which function to disable
+
+    # 1. specify an index of a function
+    which = 3
+
+    # 2. or specify the function itself
+    which = someFunction
+
+    # 3. or specify the string id of the function
+    which = 'theid'
+
+    result = chain.disable which, 'some reason'
+
+    result =
+      result: true
+      reason: 'some reason' # specified reason, or `true`
+      fn    : # the function disabled
+
+    # Note, the `reason` is optional when specifying the index or function.
+    # NOT when specifying the `id`.
+    chain.disable 3         # is okay
+    chain.disable someFn    # is okay
+
+    # NOOOOOO. this would disable the entire chain with reason 'some-id'.
+    chain.disable 'some-id'
+
+
+### API: chain.enable()
+
+Enable the entire chain or a specific function in the chain.
+
+Parameters:
+
+1. the only parameter is determines whether to enable the chain or a function, and, which function to enable. No first parameter means enable the whole chain. Otherwise, the first param can have three types. Read about these three types above in [chain.remove()](#api-chainremove).
+
+Returns:
+
+An object with properties:
+
+1. **result** - true for success, false when the function couldn't be found to disable
+2. **reason** - supplied reason, or true by default, or 'not found' when `result` is false.
+3. **chain** - if the chain is disabled then it is included in the result
+4. **fn** - if a function is removed then it is included in the result
+
+Note, if the target is not disabled then the return result will be `false` and contain the `reason` 'chain not disabled' or 'function not disabled'.
+
+Event:
+
+A `enable` event is emitted containing the same result object as the return object described above.
+
+Note, if the target is **not disabled** then no `enable` event will be emitted.
+
+Examples:
+
+    # enable the entire chain.
+    result = chain.enable()
+    result =
+      result: true
+      chain : # the chain
+
+
+    # enable a specific function
+    # there are three different ways to specify which function to enable
+
+    # 1. specify an index of a function
+    which = 3
+
+    # 2. or specify the function itself
+    which = someFunction
+
+    # 3. or specify the string id of the function
+    which = 'theid'
+
+    result = chain.enable which
+
+    result =
+      result: true
+      fn    : # the function enabled
+
+    # if the function or chain is NOT disabled:
+    result =
+      result: false
+      # for enable()
+      reason: 'chain not disabled'
+      # for enable(which)
+      reason: 'function is not disabled'
+
+
+### API: chain.select()
+
+Provide a function to select functions in the chain to apply a sub-operation to.
+
+Parameters:
+
+1. The first parameter is the only one. It must be a function which returns true for a function to include, and false for exclude.
+
+Returns:
+
+An object with four sub-operation functions available:
+
+1. **remove** - same as the `chain.remove()` function described above except called with each the selected function as the first parameter and the sub-operation's parameters provided as the second, and later, parameters. The first parameter of this `remove()` is the `reason` for the removal. It is optional.
+2. **disable** - same as described for `remove` except for the `chain.disable()` function.
+3. **enable** - same as described for `remove` except for the `chain.enable()` function.
+4. **affect** - a special sub-operation which doesn't provide the sub-operation's action function. You provide that as the first parameter of this `affect()` call.
+
+The function provided to `select()` receives two parameters:
+
+1. the function it must choose to include or exclude
+2. the index in the chain's array where the function is
+
+Examples:
+
+    selector = (fn, index) ->
+      # return the result of a test on something you care about on
+      # the function or the index...
+      # examples:
+      #   index is 3
+      #   fn?.options?.id is 'someid')
+      #   fn?.options?.tags?.indexOf?('sometag') > -1
+
+    # this `select` is reusable.
+    select = chain.select selector
+
+    # call the sub-operation with optional args
+    select.remove 'some reason'
+    select.disable 'any reason'
+    select.enable 'blah reason'
+
+    # the affect() function is special. you provide another function:
+    select.affect (fn, index) ->
+      # do something with to/with the function...
 
 
 ## API: Control
 
+Each `chain.run()` execution creates a new `Control` instance to oversee it and provide functionality to the functions being executed.
+
+The `control` instance is provided to each executed function as the first parameter.
+
+It's **not required** to make use of the `control`. Each function can ignore it and the sequential execution of the chain's functions will happen.
+
+Example:
+
+    worker = (control) ->
+      # use `control` as you choose. or ignore it completely.
+
+
 ### API: control.next()
 
-### API: control.context(Object)
+Use `next()` **only** if you want to do work both **before and after** the later functions have run through. This is the "pipeline" or "filter" pattern because it allows a function to alter what's provided to the later functions and then do something with the results after they've run. That wouldn't be possible if it was only first or only last.
 
-### API: control.pause(reason:String)
+Parameters:
 
-### API: control.stop(reason:String)
+1. **context** - optionally specify a new context object for the next function(s)
+2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final result returned back to `next()`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
 
-### API: control.fail(reason:String)
+Returns:
+
+A final results object like what [chain.run()](#api-chainrun) receives.
+
+Examples:
+
+    worker = (control) ->
+      # do some pre work
+
+      # maybe put something into the context, or, change some values.
+      this.something = 'new value'
+
+      # call the others:
+      result = control.next()
+
+      # do some post work
+      ;
+
+    overridingWorker = (control) ->
+      # do some pre work
+
+      # like, create a new context for the others to use
+      newContext = override: 'context'
+
+      # then call the rest of the functions.
+      result = control.next newContext, true
+
+      # do some post work
+      ;
+
+    retryWorker = (control) ->
+      result = control.next()
+
+      # if there's something worth retrying, call next again
+      if (result?.failed?.reason is 'some retry-able reason')
+        result = control.next()
+
+
+### API: control.context()
+
+Temporarily change the context given to the next function, or, permanently change the context for all subsequent functions and make it part of the final results.
+
+Parameters:
+
+1. **context** - optionally specify a new context object for the next function(s)
+2. **permanent** - specify whether the override context is only for the next function, or, if it's permanent. If `true` then it will replace all future contexts and become part of the final `result`. If left out, or, `false`, then it will only be given to the next function called. Note, that function may then choose to pass on the context.
+
+Returns:
+
+Returns undefined.
+
+Examples:
+
+    # only the next function called will receive the tempContext.
+    tempOverrider = (control) -?
+      tempContext = temp: 'context'
+      control.context tempContext
+
+    # this will change the context stored in the Control permanently
+    overrider = (control) ->
+      newContext = replacment: 'context'
+      control.context newContext
+
+
+### API: control.pause()
+
+Asynchronous execution is possible using `control.pause()` to retrieve a `resume()` function. The chain will wait until that function is called to begin executing again.
+
+There is an additional helper function on the returned `resume` function named `callback`. Use that to create a resume callback which accepts the standard parameters `(error, result)` and handles calling `control.fail()` with an error message and the error, or, setting the `result` into the context for you.
+
+Parameters:
+
+1. **reason** - optionally specify a reason for pausing so it's available.
+
+Returns:
+
+A function which, when called (no params), will resume execution of the chain. Has a `callback` property which is another function to create an `(error, result)` style callback function which handles those for you.
+
+Callback helper Parameters:
+
+1. optional error message which will be passed to `control.fail()` if an error occurs. Defaults to "ERROR".
+2. optional property name (result key) to set the result into the `context` with. Defaults to "result".
+
+Event:
+
+Emits a 'pause' event with the `paused` object as described below.
+
+Examples:
+
+A simple use of the resume function:
+
+    simpleResume = (control) ->
+      resume = control.pause 'wait for a bit'
+      # resume in a little bit...
+      setTimeout resume, 1234
+
+Using `resume()` within a callback:
+
+    worker = (control, context) ->
+      resume = control.pause 'because i said so'
+
+      fs.readFile './some/file.ext', 'utf8', (error, content) ->
+        if error? then control.fail 'Failed to read config file', error
+        else context.fileContent = content
+
+        # always call resume()
+        resume()
+
+
+Using the `resume.callback()` for the same results:
+
+    worker = (control) ->
+      resume   = control.pause 'because i said so'
+      callback = resume.callback 'Failed to read config file', 'fileContent'
+
+      fs.readFile './some/file.ext', 'utf8', callback
+
+    # let's look at what an error would look like as well as success
+    onDone = (error, result) ->
+      if error?
+        # the `error` will be the `failed` object like:
+        error =
+          reason: 'Failed to read config file' # message given to resume.callback
+          index : 0      # worker was first in the array
+          fun   : worker # the worker function
+
+        # the `result` will always exist, error or not.
+        # if there was an error, the result is:
+        result =
+          result : false
+          chain  : # the chain
+          context: {} # the context (which we didn't do anything to)
+          failed : # this is the error object described above
+
+      else
+        # if there was no error then the result is:
+        result =
+          result : true
+          chain  : # the chain
+          context: {}
+
+    # leave out other common stuff for brevity... imagine we setup a chain
+    result = chain.run done:onDone
+
+    # when pause() was called it returns that info to the `result` here.
+    result =
+      paused:
+        reason: 'because i said so' # reason provided to pause()
+        index : 0                   # worker function was first in array
+        fn    : worker              # our worker function
+
+
+### API: control.stop()
+
+Stops executing the chain and returns a **success** result with the reason provided to `stop()`.
+
+Note, this is for **early termination** of an execution. Not for an error. When there's an error use [control.fail()](#api-controlfail).
+
+
+Parameters:
+
+1. **reason** - optionally specify a reason for stopping so it's in the results.
+
+Returns:
+
+`true`. Yup, that's it. :)
+
+Event:
+
+Emits a 'stop' event with an object containing both the current `context` and the `stopped` object as described below.
+
+Example:
+
+    stopper = (control) ->
+      if @somethingMeaningWeAreDone
+        control.stop 'we have what we need'
+
+    # the final result:
+    result =
+      result : true  # true because a stop() is still a success
+      chain  : # the chain
+      stopped: # when stop() is called this object is in results
+        reason: 'we have what we need' # message supplied to stop()
+        index : 0       # the index of the stopper function in the chain
+        fn    : stopper # the function which called stop()
+
+
+### API: control.fail()
+
+Stops executing the chain and returns a **failure** result with the reason provided to `fail()`.
+
+Note, this is for an error during execution. If you want to simply stop execution then use [control.stop()](#api-controlstop).
+
+Parameters:
+
+1. **reason** - optionally specify a reason for failing so it's in the results.
+
+Returns:
+
+`false`. Yup, that's it. :)
+
+Event:
+
+Emits a 'fail' event with an object containing both the current `context` and the `failed` object as described below.
+
+Example:
+
+    failer = (control) ->
+      if @somethingBad
+        control.fail 'the sky is falling!'
+
+    # the final result:
+    result = {
+      result: false
+      chain : # the chain
+      failed: # when fail() is called this object is in results
+        reason: 'the sky is falling!' # message supplied to stop()
+        index : 0      # the index of the stopper function in the chain
+        fn    : failer # the function which called fail()
+
 
 ### API: control.disable()
 
-### API: control.enable()
+Disables the currently executing function. It will be skipped during execution runs until it is enabled.
+
+This allows functions to disable themselves without resorting to calling `chain.disable()` with its necessary params.
+
+Parameters:
+
+1. **reason** - optionally specify a reason for disabling. Defaults to `true`.
+
+Returns:
+
+The same object as described above in [chain.disable()](#api-chaindisable).
+
+Event:
+
+Emits a 'disable' event just like [chain.disable()](#api-chaindisable).
+
+Examples:
+
+    disabler = (control) ->
+      control.disable 'I\'ve had enough for now.'
+
 
 ### API: control.remove()
 
+Removes the currently executing function.
 
-### API: Events
+This allows functions to remove themselves without resorting to calling `chain.remove()` with its necessary params.
 
-The chain emits these events:
+When a function is removed this way its removal is recorded by the Control and it will be in the final results.
 
-1. add: when functions are added to the chain
-2. remove: when functions are removed from the chain
-3. start: when a chain execution starts
-4. pause: when `control.pause()` is called
-5. resume: when the `resume` function, returned from `control.pause()`, is called
-6. stop: when `control.stop()` is called
-7. fail: when `control.fail()` is called
-8. disable: when `control.disable()` or `chain.disable()` is called
-9. enable: when `chain.enable()` is called *and* its target actually needed enabling
-10. done: when the chain is done executing because all functions have been run, or, because stop/fail were called
+Parameters:
+
+1. **reason** - optionally specify a reason for removing the function. Defaults to `true`.
+
+Returns:
+
+`true`, Yup, that's it.
+
+Event:
+
+Emits a 'remove' event just like [chain.remove()](#api-chainremove).
+
+Examples:
+
+    quitter = (control) -> control.remove 'I quit.'
+
+    # the final result will contain functions which removed during the
+    # execution run:
+    result =
+      result : true # assuming it's a successful run
+      chain  :      # the chain
+      context: {}   # the final context..
+      removed: [
+        quitter # the function which removed itself via control.remove()
+      ]
+
 
 ## MIT License
