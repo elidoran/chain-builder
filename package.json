@@ -3,7 +3,7 @@
   "version": "0.9.1",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "lib",
-  "author": "Eli Doran <eli@elidoran.com>",
+  "author": "Eli Doran <eli+npm@elidoran.com>",
   "license": "MIT",
   "scripts": {
     "build": "coffee --bare --compile lib",
