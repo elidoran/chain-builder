@@ -89,8 +89,6 @@ F. [MIT License](#mit-license)
 
 ## Usage: Basic
 
-[More Usage](#usage)
-
 Here is an extremely basic example to show the basic parts working together.
 
 ```javascript
