@@ -28,5 +28,7 @@
     "mocha": "^3.1.2",
     "nave": "^1.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "array-flatten": "^2.1.0"
+  }
 }
