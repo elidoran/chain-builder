@@ -5,6 +5,8 @@
 
 Manage an array of functions and execute them in a series with a variety of flows.
 
+[Pair](#usage-ordering) with [ordering](https://www.npmjs.com/package/ordering) to have advanced ordering of the array of functions.
+
 Some of the features:
 
 1. "chain of command" - call functions in series
@@ -39,6 +41,7 @@ A. Usage
   2. [Simple](#usage-simple)
   3. [Complex](#usage-complex)
   4. [Considerations](#usage-considerations)
+  5. [Ordering](#usage-ordering)
 
 B. Executing a Chain
 
@@ -213,6 +216,7 @@ Show many advanced features:
 13. show a "temporary override" of the context for the next function
 14. show a "permanent override" of the context
 
+
 ```javascript
 var buildChain = require('chain-builder')
   , localFunctionsArray = require('./some/lib/fn/provider')
@@ -236,7 +240,7 @@ chain.enable('the.optin.id');
 //   // then we want to "select" this one, so, return true.
 //   return hasArray && (fn.options.labels.indexOf('cache') > -1);
 // }
-// it's possible to store the result and reuse it.
+// it's possible to store the returned object and reuse its functions.
 var selectCacheFns = chain.select(require('./select-cache-fns'));
 // use it now to remove the matching functions,
 // and optionally give a reason for removal.
@@ -304,8 +308,8 @@ function iStopSometimes(control, context) {
 }
 
 function iRetrySometimes(control) {
-  // let the rest of the chain do its work, we'll do something on its way back
-  // to provide a new context as well, use control.context(..., true) seen above.
+  // let the rest of the chain do its work, we'll do something on its way back.
+  // can provide a new context by passing to next() just like context()
   var result = control.next();
 
   // now we have the result of the calls after this function.
@@ -322,12 +326,12 @@ function iRetrySometimes(control) {
 // it will be returned in the result unless overridden permanently.
 // this could be a class instance and have functions on it as well.
 var context = {}
-// the run() accepts options included the `context` we just created
+// the run() accepts options including the `context` we just created
   , runOptions = { context: context };
 
 // Or, we can affect the context object which is built by default using
 // Object.create(base, props);
-var runOptions = {
+var runOptions2 = {
   base: {
     // some constant
     config: 'value'
@@ -358,6 +362,44 @@ result = {
 2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
 3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
 4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+
+
+## Usage: Ordering
+
+Use [ordering](https://www.npmjs.com/package/ordering) to order functions in the array. This allows contributing functions from multiple modules into a single chain and having them ordered based on advanced dependency constraints.
+
+Here's an example of how to implement it with features:
+
+1. multiple changes won't trigger ordering multiple times because it is ordered once before a `run()` starts.
+2. it will only order it when it has been changed since the last time it was ordered
+
+```javascript
+// get that library
+order = require('ordering');
+
+// use a listener for both 'add' and 'remove' events
+function markChanged(event) {
+  // mark the chain as no longer ordered
+  event.chain.__isOrdered = false;
+}
+
+// use a listener for 'start' which will order an unordered array
+function ensureOrdered(event) {
+  // unless it has specifically been set to true then we order it.
+  // the first 'start' it may be undefined, we'll order it then.
+  if (event.chain.__isOrdered !== true) {
+    order(event.chain.array);
+    event.chain.__isOrdered = true;
+  }
+}
+
+// add listeners to any chain instance you want ordered
+chain.on('add', markChanged);
+chain.on('remove', markChanged);
+chain.on('start', ensureOrdered);
+// Note, didn't listen to 'clear' because that causes
+// an empty array which *is* "ordered".
+```
 
 
 ### Execution: Events
