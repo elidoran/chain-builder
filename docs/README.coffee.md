@@ -5,6 +5,8 @@
 
 Manage an array of functions and execute them in a series with a variety of flows.
 
+[Pair](#usage-ordering) with [ordering](https://www.npmjs.com/package/ordering) to have advanced ordering of the array of functions.
+
 Some of the features:
 
 1. "chain of command" - call functions in series
@@ -40,6 +42,7 @@ A. Usage
   2. [Simple](#usage-simple)
   3. [Complex](#usage-complex)
   4. [Considerations](#usage-considerations)
+  5. [Ordering](#usage-ordering)
 
 B. Executing a Chain
 
@@ -361,6 +364,39 @@ Lastly, remember all the events emitted from chain allow configuring lots of lis
 2. `chain.add()` - passing multiple function arguments (not an array) will be treated as an array of those functions
 3. the array can be changed which will affect any currently running chain executions (async) when they attempt to retrieve the next function to call
 4. be careful to ensure [advanced context manipulations](#advanced-contexts) don't break others' functions
+
+
+## Usage: Ordering
+
+Use [ordering](https://www.npmjs.com/package/ordering) to order functions in the array. This allows contributing functions from multiple modules into a single chain and having them ordered based on advanced dependency constraints.
+
+Here's an example of how to implement it with features:
+
+1. multiple changes won't trigger ordering multiple times because it is ordered once before a `run()` starts.
+2. it will only order it when it has been changed since the last time it was ordered
+
+    # get that library
+    order = require 'ordering'
+
+    # use a listener for both 'add' and 'remove' events
+    markChanged = (event) ->
+      # mark the chain as no longer ordered
+      event.chain.__isOrdered = false
+
+    # use a listener for 'start' which will order an unordered array
+    ensureOrdered = (event) ->
+      # unless it has specifically been set to true then we order it.
+      # the first 'start' it may be undefined, we'll order it then, too.
+      if event.chain.__isOrdered is true
+        order event.chain.array
+        event.chain.__isOrdered = true
+
+    # add listeners to any chain instance you want ordered
+    chain.on 'add', markChanged
+    chain.on 'remove', markChanged
+    chain.on 'start', ensureOrdered
+    # Note, didn't listen to 'clear' because that causes
+    # an empty array which *is* "ordered".
 
 
 ### Execution: Events
