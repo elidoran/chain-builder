@@ -7,8 +7,10 @@
 3. added accepting `props` option property to new chain
 4. added using `props` option in the default context builder (should have been there before...)
 5. removed an old link from README which should have been removed
+6. added `chain` to emitted events so listeners can be generic and use the `chain` provided to it
+7. added new section to the README showing how to use module `ordering` to order the array contents before a `run()`. (stick those in a separate module somewhere??)
 
-The README in 0.10.0 said it was possible to provide *multiple* functions as arguments. Which I hadn't implemented. So, now it's implemented along with the additional changes listed above.
+The README in 0.10.0 said it was possible to provide *multiple* functions as arguments to `buildChain`. Which I hadn't implemented. So, now it's implemented along with the additional changes listed above.
 
 0.10.0 - 2016/10/29
 
