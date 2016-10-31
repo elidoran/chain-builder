@@ -1,4 +1,5 @@
-Control = require './control'
+getOptions = require './get-options'
+Control    = require './control'
 
 ###
   Chain holds an array of functions to execute in sequence managed by a Control.
@@ -9,33 +10,31 @@ module.exports = class Chain extends require('events').EventEmitter
 
     # if module's builder function already validated the array then use it
     # and avoid redoing that same work
-    if options?.__validated
-      array = options.array
+    if options?.__validated then array = options.array
 
     # otherwise, let's be safe, must find the array and validate it
     else
-      array =
-        if Array.isArray options then options                    # new Chain [...]
-        else if typeof options is 'function' then [ options ]    # new Chain fn
-        else if Array.isArray options?.array then options.array  # new Chain array:[]
-        else []                                                  # new Chain()
+      options = getOptions options
 
-      # validate array's contents: must be functions
-      for element,index in array
-        unless 'function' is typeof(element)
-          # can't return a value from constructor, so, throw Error
-          throw new Error 'Elements must be functions. Invalid #'+index+':'+element
+      # can't return a value from constructor, so, throw Error
+      if options?.error? then throw new Error options.error
+
+      array = options.array
 
     # an array of functions, so simple, until you wrap a Chain around it...
     @array = array
 
     # store the base of the context object (optional)
-    @_base = options?.base
+    @_base  = options?.base
+    @_props = options?.props
 
     # when a new context builder is specified then move default one to new prop
     if options?.buildContext?
       @_originalBuildContext = @_buildContext
       @_buildContext = options.buildContext
+
+    # all done
+    return
 
   # add functions to the array:
   #  chain.add fn
@@ -449,4 +448,9 @@ module.exports = class Chain extends require('events').EventEmitter
       #  2. from the chain's options
       #  3. the default is an empty object
       base = options?.base ? @_base ? {}
-      Object.create base, options?.props
+
+      # don't default to anything. Only use what's provided.
+      props = options?.props ? @_props
+
+      # now create with those
+      Object.create base, props
