@@ -131,7 +131,7 @@ module.exports = class Control
         @removed.push fn[0]
 
         # emit the removal
-        @_chain.emit 'remove', result:true, removed:fn, reason:reason
+        @_chain.emit 'remove', result:true, removed:fn, reason:reason, chain:@_chain
 
       else # otherwise, move forward to the next function
 

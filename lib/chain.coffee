@@ -56,7 +56,7 @@ module.exports = class Chain extends require('events').EventEmitter
     @array.splice @array.length, 0, fns...
 
     # build our result for both emit and return
-    result = result:true, added:fns
+    result = result:true, added:fns, chain:this
 
     # if length is different then we actually added some, so emit 'add'
     # Note: this exists because it's possible to call add with nothing and
@@ -87,7 +87,7 @@ module.exports = class Chain extends require('events').EventEmitter
   _remove: (_, index, reason = true) ->
 
     # by default, return an empty object because we didn't remove anything
-    result = result:false, reason:reason
+    result = result:false, reason:reason, chain:this
 
     # if we found it tho
     if index > -1
@@ -272,7 +272,9 @@ module.exports = class Chain extends require('events').EventEmitter
   # empty the chain of all functions and let everyone know
   clear: () ->
 
-    result = result:false     # create a result for both emit and return
+    result =                  # create a result for both emit and return
+      result: false
+      chain : this
 
     if @array.length > 0      # only operate when there's some content to clear
       array = @array          # remember the array
