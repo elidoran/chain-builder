@@ -1,4 +1,15 @@
 
+0.11.0 - 2016/10/30
+
+1. moved processing options to its own file and used it in both places
+2. added array-flatten module dependency so options processing can accept multiple array arguments
+3. allow multiple function arguments to builder
+3. added accepting `props` option property to new chain
+4. added using `props` option in the default context builder (should have been there before...)
+5. removed an old link from README which should have been removed
+
+The README in 0.10.0 said it was possible to provide *multiple* functions as arguments. Which I hadn't implemented. So, now it's implemented along with the additional changes listed above.
+
 0.10.0 - 2016/10/29
 
 This was a large effort to add in all the remaining design features I had planned.
