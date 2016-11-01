@@ -158,7 +158,7 @@ module.exports = class Chain extends require('events').EventEmitter
     else fn.options = disabled: reason
 
     # create our result
-    result = result:true, fn:fn, reason:reason
+    result = result:true, fn:fn, reason:reason, chain:this
 
     # tell everyone
     @emit 'disable', result
@@ -223,7 +223,7 @@ module.exports = class Chain extends require('events').EventEmitter
   _enable: (fn) ->
 
     # create our result, defaults to false
-    result = result:false, fn:fn
+    result = result:false, fn:fn, chain:this
 
     # ensure it actually is disabled...
     if fn?.options?.disabled?

@@ -23,7 +23,7 @@ module.exports = class Control
     unless @failed?
 
       # let everyone know we're resuming now
-      @_chain.emit 'resume', this # TODO: Not sure what to include here
+      @_chain.emit 'resume', chain:@_chain # TODO: Not sure what to include here
 
       # begin executing again. this restarts the sync style execution with a return
       result = @_execute()
@@ -131,7 +131,7 @@ module.exports = class Control
         @removed.push fn[0]
 
         # emit the removal
-        @_chain.emit 'remove', result:true, removed:fn, reason:reason, chain:@_chain
+        @_chain.emit 'remove', removed:fn, reason:reason, chain:@_chain
 
       else # otherwise, move forward to the next function
 
@@ -189,7 +189,7 @@ module.exports = class Control
     @paused = reason:reason, index:@_index, fn:@_array[@_index]
 
     # let everyone know the chain paused
-    @_chain.emit 'pause', @paused
+    @_chain.emit 'pause', paused:@paused, chain:@_chain
 
     # return @_resume as the `resume` function. bind it to this `control`
     resumer = @_resume.bind this
@@ -210,7 +210,7 @@ module.exports = class Control
     @stopped = reason:reason, index:@_index, fn:@_array[@_index]
 
     # let's emit both the context and the stopped info
-    result = context:@_context, stopped:@stopped
+    result = context:@_context, stopped:@stopped, chain:@_chain
 
     # let everyone know we stopped
     @_chain.emit 'stop', result
@@ -227,7 +227,7 @@ module.exports = class Control
     if error? then @failed.error = error
 
     # let's emit both the context and the 'failed' info
-    result = context:@_context, failed:@failed
+    result = context:@_context, failed:@failed, chain:@_chain
 
     # let everyone know we 'failed'. provide the related info
     @_chain.emit 'fail', result
