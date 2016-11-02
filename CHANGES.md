@@ -1,4 +1,9 @@
 
+0.11.1 - 2016/11/01
+
+1. added `chain` to remaining events (enable/disable)
+
+
 0.11.0 - 2016/10/30
 
 1. moved processing options to its own file and used it in both places
