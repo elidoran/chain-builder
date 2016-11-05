@@ -1,9 +1,9 @@
 {
   "name": "chain-builder",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "lib",
-  "keywords":[
+  "keywords": [
     "command",
     "chain",
     "pipeline",
