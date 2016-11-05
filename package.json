@@ -3,6 +3,23 @@
   "version": "0.11.1",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "lib",
+  "keywords":[
+    "command",
+    "chain",
+    "pipeline",
+    "filter",
+    "execution",
+    "execute",
+    "run",
+    "series",
+    "sequence",
+    "control",
+    "flow",
+    "synchronous",
+    "asynchronous",
+    "pause",
+    "resume"
+  ],
   "author": "Eli Doran <eli+npm@elidoran.com>",
   "license": "MIT",
   "scripts": {
