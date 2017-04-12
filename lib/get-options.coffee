@@ -19,7 +19,7 @@ module.exports = (args...) ->
     else []
 
   # validate array's contents: must be functions
-  for element,index in array
+  for element, index in array
     unless 'function' is typeof(element)
       return error:'Elements must be functions', element:element, index:index
 

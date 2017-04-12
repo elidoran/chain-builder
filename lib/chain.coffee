@@ -50,7 +50,7 @@ module.exports = class Chain extends require('events').EventEmitter
 
     # ensure each one is actually a function
     for fn in fns
-      unless 'function' is typeof(fn) then return error:'must be a function',fn:fn
+      unless 'function' is typeof(fn) then return error:'must be a function', fn:fn
 
     # append them into the array via splice()
     @array.splice @array.length, 0, fns...
@@ -244,29 +244,29 @@ module.exports = class Chain extends require('events').EventEmitter
   # used to find the index of a function based on index, id, or itself
   _findIndex: (which) ->
 
-      switch typeof which # which kind of value did we get
+    switch typeof which # which kind of value did we get
 
-        when 'string' # it's an id of a function, so find it
+      when 'string' # it's an id of a function, so find it
 
-          for fn,i in @array
-            if which is fn?.options?.id then return i
+        for fn, i in @array
+          if which is fn?.options?.id then return i
 
-          return -1 # we didn't find it!
+        return -1 # we didn't find it!
 
-        when 'number' # they provided an index to use...
-          # if that's a valid index then return it
-          if 0 <= which < @array.length then return which
+      when 'number' # they provided an index to use...
+        # if that's a valid index then return it
+        if 0 <= which < @array.length then return which
 
-          # otherwise, return an error about it
-          else return error:'Invalid index: ' + which
+        # otherwise, return an error about it
+        else return error:'Invalid index: ' + which
 
-        # find the function in the array
-        when 'function' then return @array.indexOf which
+      # find the function in the array
+      when 'function' then return @array.indexOf which
 
-        # woh! no good
-        else return error =
-          error: 'Requires a string (ID), an index, or the function'
-          which: which
+      # woh! no good
+      else return error =
+        error: 'Requires a string (ID), an index, or the function'
+        which: which
 
 
   # empty the chain of all functions and let everyone know
@@ -399,9 +399,9 @@ module.exports = class Chain extends require('events').EventEmitter
     if @_disabled? # if we're disabled then tell them
       return result:false, reason:'chain disabled', disabled:@_disabled
 
-    context = @_buildContext options               # build/use context
+    ctx = @_buildContext options                   # build/use context
     done = options?.done ? done                    # look for `done`
-    control = new Control @, @array, context, done # create Control
+    control = new Control this, @array, ctx, done  # create Control
     @emit 'start', control:control, chain:this     # notify we're starting
     result = control._execute()                    # start the chain
     if control.paused?                             # a paused chain isn't done
