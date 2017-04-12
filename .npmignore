@@ -1,7 +1,9 @@
 *.coffee
-test/
 .DS_Store
 .git
 .gitignore
-docs/
+
+build/
 coverage/
+docs/
+test/
