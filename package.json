@@ -2,7 +2,10 @@
   "name": "chain-builder",
   "version": "0.11.2",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
-  "main": "lib",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
   "keywords": [
     "command",
     "chain",
