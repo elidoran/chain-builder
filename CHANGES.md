@@ -1,13 +1,27 @@
-0.11.2 - 2016/11/05
+### 0.12.0 - 2017/04/12
+
+1. change this file: change to header lines for each date/version info
+2. update license with current year (2017)
+3. update package dependencies
+4. add Node 7 to testing commands
+5. cleanup testing commands by moving the "testrun" into "test"
+6. remove unnecessary "testold" script
+7. update Travis CI with Node 7, caching `node_modules`, publishing code coverage
+8. add code coverage deps, scripts, custom loader, and ignore for git and npm
+9. add linting via coffeelint with a custom config
+10. specify the exact `main` file
+11. specify the `files` array to include for publishing
+
+
+### 0.11.2 - 2016/11/05
 
 1. added missing keywords
 
-0.11.1 - 2016/11/01
+### 0.11.1 - 2016/11/01
 
 1. added `chain` to remaining events (enable/disable)
 
-
-0.11.0 - 2016/10/30
+### 0.11.0 - 2016/10/30
 
 1. moved processing options to its own file and used it in both places
 2. added array-flatten module dependency so options processing can accept multiple array arguments
@@ -20,7 +34,8 @@
 
 The README in 0.10.0 said it was possible to provide *multiple* functions as arguments to `buildChain`. Which I hadn't implemented. So, now it's implemented along with the additional changes listed above.
 
-0.10.0 - 2016/10/29
+
+### 0.10.0 - 2016/10/29
 
 This was a large effort to add in all the remaining design features I had planned.
 Also, as the test suite was completed it brought out some things to change.
@@ -52,14 +67,14 @@ I am planning on releasing this as version 1.0.0 once I've done some play testin
 21. improved `control.next()` to be reentrant allowing a function to cause another execution from where it is in the array. This allows retry style behavior.
 
 
-0.9.1 - 2016/10/23
+### 0.9.1 - 2016/10/23
 
 1. added clear()
 2. splicing new functions into array instead of pushing one at a time
 3. including `chain` in start/done event emits
 
 
-0.8.0 - 2016/10/16
+### 0.8.0 - 2016/10/16
 
 1. added old revisions to README
 2. added missing `context:context` in code examples in README
@@ -73,11 +88,11 @@ I am planning on releasing this as version 1.0.0 once I've done some play testin
 10. switched test scripts to do one local script and changed Travis to separately test different node versions
 
 
-0.7.1 - 2015/11/12
+### 0.7.1 - 2015/11/12
 
 1. added emitting add/remove events
 
-0.7.0 - 2015/11/11
+### 0.7.0 - 2015/11/11
 
 1. change to using a class
 2. allow adding and removing functions from chain
