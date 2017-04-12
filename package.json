@@ -27,14 +27,12 @@
     "clean": "rm -rf ./lib/*.js",
     "prepublish": "npm run build",
     "postpublish": "npm run clean",
-    "testrun": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test",
-    "test012": "nave use 0.12 npm run testrun",
-    "test4": "nave use 4.8 npm run testrun",
-    "test6": "nave use 6.10 npm run testrun",
-    "test7": "nave use 7.9 npm run testrun",
-    "test-all": "npm run test012 && npm run test4 && npm run test6 && npm run test7",
-    "testold": "if [ -e TRAVIS ]; then npm run test-all; else npm run testrun; fi",
-    "test": "npm run testrun"
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test",
+    "test012": "nave use 0.12 npm test",
+    "test4": "nave use 4.8 npm test",
+    "test6": "nave use 6.10 npm test",
+    "test7": "nave use 7.9 npm test",
+    "test-all": "npm run test012 && npm run test4 && npm run test6 && npm run test7"
   },
   "repository": {
     "type": "git",
