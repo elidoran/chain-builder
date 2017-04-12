@@ -42,11 +42,11 @@
   },
   "bugs": "http://github.com/elidoran/chain-builder/issues",
   "devDependencies": {
-    "coffee-script": "^1.11.1",
-    "mocha": "^3.1.2",
-    "nave": "^1.0.1"
+    "coffee-script": "^1.12.5",
+    "mocha": "^3.2.0",
+    "nave": "^2.2.3"
   },
   "dependencies": {
-    "array-flatten": "^2.1.0"
+    "array-flatten": "^2.1.1"
   }
 }
