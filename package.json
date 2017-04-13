@@ -38,7 +38,7 @@
     "test7": "nave use 7.9 npm test",
     "test-all": "npm run test012 && npm run test4 && npm run test6 && npm run test7",
     "precoverage": "npm run clean",
-    "coverage": "istanbul cover _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test",
+    "coverage": "istanbul cover -x 'build/**' _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test",
     "publish-coverage": "npm run coverage && cat coverage/lcov.info | coveralls",
     "precoverage-lcov": "npm run clean",
     "coverage-lcov": "istanbul cover _mocha --report lcovonly -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/",
