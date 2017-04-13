@@ -264,7 +264,7 @@ module.exports = class Chain extends require('events').EventEmitter
       when 'function' then return @array.indexOf which
 
       # woh! no good
-      else return error =
+      else
         error: 'Requires a string (ID), an index, or the function'
         which: which
 
