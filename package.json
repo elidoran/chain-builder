@@ -42,7 +42,10 @@
     "publish-coverage": "npm run coverage && cat coverage/lcov.info | coveralls",
     "precoverage-lcov": "npm run clean",
     "coverage-lcov": "istanbul cover -x 'build/**' _mocha --report lcovonly -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/",
-    "coverage-clean": "rm -rf ./coverage"
+    "coverage-clean": "rm -rf ./coverage",
+    "prebenchmark": "npm run build",
+    "benchmark": "node benchmark/index.js",
+    "update-original": "npm run build && cp lib/*.js benchmark/original/ && npm run clean"
   },
   "repository": {
     "type": "git",
@@ -50,14 +53,19 @@
   },
   "bugs": "http://github.com/elidoran/chain-builder/issues",
   "devDependencies": {
+    "benchmark": "^2.1.4",
     "coffee-coverage": "^2.0.1",
     "coffee-script": "^1.12.5",
     "coffeelint": "^1.16.0",
+    "comma-number": "^2.0.0",
+    "console.table": "^0.8.0",
     "coveralls": "^2.13.0",
+    "deep-eql": "^2.0.1",
     "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
     "mocha-lcov-reporter": "^1.3.0",
-    "nave": "^2.2.3"
+    "nave": "^2.2.3",
+    "pad": "^1.1.0"
   },
   "dependencies": {
     "array-flatten": "^2.1.1"
