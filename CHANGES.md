@@ -1,3 +1,9 @@
+### 0.13.0 - 2017/04/13
+
+1. added testing to achieve 100% code coverage
+2. added benchmarking to measure performance and compare to previous version
+
+
 ### 0.12.0 - 2017/04/12
 
 1. change this file: change to header lines for each date/version info
