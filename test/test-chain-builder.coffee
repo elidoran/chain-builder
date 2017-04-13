@@ -10,17 +10,20 @@ describe 'test building chain', ->
     assert chain.array, 'should have an array'
     assert.equal chain?.array?.length, 0, 'should have an empty array'
 
+
   it 'with empty options should build chain w/out fn\'s', ->
     chain = buildChain {}
     assert chain, 'should return the chain'
     assert chain.array, 'should have an array'
     assert.equal chain?.array?.length, 0, 'should have an empty array'
 
+
   it 'with empty array in options should build chain w/out fn\'s', ->
     chain = buildChain array:[]
     assert chain, 'should return the chain'
     assert chain.array, 'should have an array'
     assert.equal chain?.array?.length, 0, 'should have an empty array'
+
 
   it 'with array in options should build chain w/one fn', ->
     fn = ->
@@ -29,6 +32,82 @@ describe 'test building chain', ->
     assert chain.array, 'should have an array'
     assert.equal chain?.array?.length, 1, 'should have fn in array'
     assert.strictEqual chain.array[0], fn
+
+
+  it 'with function as options should build chain w/one fn', ->
+    fn = ->
+    chain = buildChain fn
+    assert chain, 'should return the chain'
+    assert chain.array, 'should have an array'
+    assert.equal chain?.array?.length, 1, 'should have fn in array'
+    assert.strictEqual chain.array[0], fn
+
+
+  it 'with 2 functions as options should build chain w/both fns', ->
+    fn1 = ->
+    fn2 = ->
+    chain = buildChain fn1, fn2
+    assert chain, 'should return the chain'
+    assert chain.array, 'should have an array'
+    assert.equal chain?.array?.length, 2, 'should have both in array'
+    assert.strictEqual chain.array[0], fn1
+    assert.strictEqual chain.array[1], fn2
+
+
+  it 'with class instead of builder', ->
+    chain = new buildChain.Chain array:[->]
+    assert chain, 'should return the chain'
+    assert chain.array, 'should have an array'
+    assert.equal chain?.array?.length, 1, 'should have fn in array'
+    assert.equal typeof(chain.array[0]), 'function'
+
+
+  it 'with class and bad options', ->
+    assert.throws ->
+      chain = buildChain.Chain array:['bad']
+
+
+  it 'with custom buildContext', ->
+    fn = -> {}
+    chain = buildChain buildContext:fn
+    assert chain._originalBuildContext
+    assert.equal chain._buildContext, fn
+
+
+  it 'with nested array should be flattened', ->
+    fn = ->
+    chain = buildChain [ [fn] ]
+    assert chain, 'should return the chain'
+    assert chain.array, 'should have an array'
+    assert.equal chain?.array?.length, 1, 'should have fn in array'
+    assert.strictEqual chain.array[0], fn
+
+
+  it 'with base and props options should be used', ->
+
+    class Thing
+      constructor: ->
+      noop: -> 'noop'
+
+    options =
+      base : Thing.prototype
+      props:
+        value:
+          configurable: false
+          enumerable: true
+          writable: false
+          value: 'some value'
+
+    chain = buildChain options
+
+    assert chain, 'should return the chain'
+    assert chain._base, options.base
+    assert chain._props, options.props
+
+    context = chain._buildContext()
+
+    assert.equal context.noop(), 'noop'
+    assert.equal context.value, 'some value'
 
 
 # 2. chain.add()
@@ -40,6 +119,12 @@ describe 'test chain.add()', ->
   fn3 = ->
   beforeEach ->
     chain = buildChain()
+
+  it 'shouldnt emit an add event for add() without args', ->
+    called = false
+    chain.on 'add', -> called = true
+    chain.add()
+    assert.equal called, false
 
   it 'should add single fn to array', ->
     chain.add fn1
@@ -462,6 +547,7 @@ describe 'test running chain', ->
   beforeEach ->
     chain = buildChain()
 
+
   it 'should catch thrown errors', ->
     theError = null
     theFn = ->
@@ -479,6 +565,20 @@ describe 'test running chain', ->
     assert.equal results.failed?.reason, 'caught error'
     assert.equal results.failed?.index, 0, 'function should be first in the array'
     assert.strictEqual results.failed?.fn, theFn
+
+
+  it 'should return received error result', ->
+    theError = null
+    theFn = -> error: 'test error'
+
+    chain.add theFn
+
+    results = chain.run()
+    
+    assert results, 'should return results'
+    assert.equal results.result.error, 'test error', 'results should contain the error'
+
+
 
   describe 'synch\'ly', ->
 
@@ -979,6 +1079,13 @@ describe 'test disable', ->
   beforeEach ->
     chain = buildChain()
 
+  it 'should return error for bad arg', ->
+
+    result = chain.disable new Date
+    assert result
+    assert.equal result.error, 'Requires a string (ID), an index, or the function'
+
+
   it 'should disable the chain with a default reason', ->
 
     called = []
@@ -1209,6 +1316,12 @@ describe 'test enable', ->
 
   beforeEach ->
     chain = buildChain()
+
+  it 'should return error for bad arg', ->
+
+    result = chain.enable new Date
+    assert result
+    assert.equal result.error, 'Requires a string (ID), an index, or the function'
 
   it 'should have false result if chain is already enabled', ->
 
