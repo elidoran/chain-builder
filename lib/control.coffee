@@ -107,11 +107,11 @@ module.exports = class Control
   # this is the main function to execute the chain
   _execute: (context) ->
     # these shouldn't ever happen... # TODO: change to return error:'...'
-    ### !pragma coverage-skip-next ###
+    ### istanbul ignore next ###
     if @paused?  then throw new Error 'paused, can not perform _execute()'
-    ### !pragma coverage-skip-next ###
+    ### istanbul ignore next ###
     if @stopped? then throw new Error 'stopped, can not perform _execute()'
-    ### !pragma coverage-skip-next ###
+    ### istanbul ignore next ###
     if @failed?  then throw new Error 'failed, can not perform _execute()'
 
     # loop thru executing functions unless paused/stopped/failed
