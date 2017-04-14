@@ -1,0 +1,58 @@
+{
+  "info": [
+    {
+      "label": "run() empty",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 757235621
+    },
+    {
+      "label": "run() single",
+      "repeat": 1000000,
+      "seconds": 1,
+      "nanos": 184922289
+    },
+    {
+      "label": "run() many",
+      "repeat": 1000000,
+      "seconds": 15,
+      "nanos": 242509666
+    },
+    {
+      "label": "run() single inc, n is   defined",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 408913287
+    },
+    {
+      "label": "run() single inc, n is undefined",
+      "repeat": 1000000,
+      "seconds": 7,
+      "nanos": 623836235
+    },
+    {
+      "label": "run() many   inc, n is   defined",
+      "repeat": 1000000,
+      "seconds": 21,
+      "nanos": 212561968
+    },
+    {
+      "label": "run() many   inc, n is undefined",
+      "repeat": 1000000,
+      "seconds": 28,
+      "nanos": 477240628
+    },
+    {
+      "label": "run() many   inc, n is   defined",
+      "repeat": 1000000,
+      "seconds": 19,
+      "nanos": 860602994
+    },
+    {
+      "label": "run() many   inc, n is undefined",
+      "repeat": 1000000,
+      "seconds": 28,
+      "nanos": 487030738
+    }
+  ]
+}
