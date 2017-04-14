@@ -1477,7 +1477,7 @@ function tempOverrider(control) {
 
 // this will change the context stored in the Control permanently
 function overrider(control) {
-  var newContext = { replacment: 'context' };
+  var newContext = { replacement: 'context' };
   control.context(newContext);
 }
 ```
@@ -1738,4 +1738,4 @@ result = {
 ```
 
 
-## MIT License
+## [MIT License](LICENSE)
