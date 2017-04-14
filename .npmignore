@@ -4,6 +4,7 @@
 .gitignore
 
 build/
+benchmark/
 coverage/
 docs/
 test/
