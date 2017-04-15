@@ -248,6 +248,8 @@ module.exports = class Chain extends require('events').EventEmitter
 
       when 'string' # it's an id of a function, so find it
 
+        # TODO:
+        # return i for fn, i in @array when which is fn?.options?.id
         for fn, i in @array
           if which is fn?.options?.id then return i
 
