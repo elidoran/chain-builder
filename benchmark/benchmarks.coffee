@@ -10,7 +10,7 @@ class Benchmarks
 
   run: (options) ->
 
-    original = options.original
+    old    = options.old
     repeat = options.repeat ? 1
     report = options.report is true
     store  = options.store is true
@@ -31,7 +31,8 @@ class Benchmarks
       benchmark.setup()
 
       # pre-run for optimization
-      benchmark.run Math.max 1, Math.floor repeat * 0.25 # TODO: support asynchronous ...
+      prerun = if repeat is 1 then 1 else Math.max 100, Math.floor repeat * 0.25
+      benchmark.run prerun # TODO: support asynchronous ...
 
       start = process.hrtime()
 
@@ -39,7 +40,7 @@ class Benchmarks
 
       elapsed = process.hrtime start
 
-      info = { benchmark, repeat, elapsed, result, original:original.info[index] }
+      info = { benchmark, repeat, elapsed, result, old:old.info[index] }
       if report then @reportResult info
       if store  then @storeResult info
 
@@ -56,41 +57,50 @@ class Benchmarks
     string[0 ... index]
 
   reportHeader: ->
-    h1 = chalk.blue pad(12, 'old rate')
-    h2 = ' |' + chalk.blue pad 12, 'new rate'
+    padSize = 12
+    h1 = chalk.blue pad(padSize, 'old ops/sec')
+    h2 = ' |' + chalk.blue pad padSize, 'new ops/sec'
     h3 = ' |' + pad 10, 'change'
-    h4 = ' |' + chalk.magenta pad 12, 'old secs'
-    h5 = ' |' + chalk.magenta pad 12, 'new secs'
+    h4 = ' |' + chalk.magenta pad padSize, 'old seconds'
+    h5 = ' |' + chalk.magenta pad padSize, 'new seconds'
     h6 = ' |' + chalk.bold ' label'
     console.log h1 + h2 + h3 + h4 + h5 + h6
-    console.log '--------------------------------------------------------------------'
+    console.log '----------------------------------------------------------------------------------------------'
 
-  reportResult: ({benchmark, repeat, elapsed, original}) ->
+  reportResult: (info) ->
+    # info = {benchmark, repeat, elapsed, old}
+    padSize = 12
 
-    originalSecs = original.seconds + (original.nanos / 1e9)
-    newSecs      = elapsed[0] + (elapsed[1] / 1e9)
+    if info.old?
+      oldTimeNum = info.old.seconds + (info.old.nanos / 1e9)
+      oldTime    = chalk.magenta @format padSize, oldTimeNum
+      oldRateNum = info.old.repeat / oldTimeNum
+      oldRate    = chalk.blue @format padSize, oldRateNum
 
-    originalRate = original.repeat / originalSecs
-    newRate      = repeat / newSecs
+    else
+      oldTime = '         N/A'
+      oldRate = '         N/A'
 
-    secs0 = chalk.magenta @format 12, originalSecs
-    rate0 = chalk.blue @format 12, originalRate
+    newTimeNum = info.elapsed[0] + (info.elapsed[1] / 1e9)
+    newTime    = chalk.magenta @format padSize, newTimeNum
+    newRateNum = info.repeat / newTimeNum
+    newRate    = chalk.blue @format padSize, newRateNum
 
-    secs1 = chalk.magenta @format 12, newSecs
-    rate1 = chalk.blue @format 12, newRate
+    if info.old?
+      change = Math.round(((newRateNum - oldRateNum) / oldRateNum) * 100)
+      color =
+        if change > 0.01 then chalk.green
+        else if change < -0.01 then chalk.red
+        else chalk.black
+      change = color(@format 9, change.toFixed 0) + '%'
 
-    change = Math.round(((newRate - originalRate) / originalRate) * 100)
-    color =
-      if change > 0.01 then chalk.green
-      else if change < -0.01 then chalk.red
-      else chalk.black
-    change = color(@format 9, change.toFixed 0) + '%'
+    else change = '      N/A '
 
-    label = chalk.bold benchmark.label
+    label = chalk.bold info.benchmark.label
 
-
-    line = rate0 + ' |' + rate1 + ' |' + change + ' |' + secs0 + ' |' + secs1 + ' |  ' + label
-    console.log line
+    console.log """
+    #{oldRate} |#{newRate} |#{change} |#{oldTime} |#{newTime} |  #{label}
+    """
 
 
   storeResult: ({benchmark, repeat, elapsed}) ->
