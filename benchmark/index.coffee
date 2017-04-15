@@ -14,6 +14,7 @@ basicSetup = (buildOptions, runOptions) ->   ->
     runOptions: runOptions
   return
 
+
 runChain = (repeat) ->
   {chain, runOptions} = @setup
   chain.run runOptions for i in [0 ... repeat]
@@ -95,7 +96,6 @@ benchmarks = benchmarks [
         functions.context()
         functions.repeat(50, functions.empty)
       ]
-      buildContext: -> a:0, b:0, c:0, d:0, e:0, f:0, g:0
     run  : runChain
 
   benchmark 'run() many   context permanent',
@@ -105,7 +105,6 @@ benchmarks = benchmarks [
         functions.contextPermanent()
         functions.repeat(50, functions.empty)
       ]
-      buildContext: -> a:0, b:0, c:0, d:0, e:0, f:0, g:0
     run  : runChain
 
 
@@ -116,7 +115,6 @@ benchmarks = benchmarks [
         functions.next()
         functions.repeat(50, functions.empty)
       ]
-      buildContext: -> a:0, b:0, c:0, d:0, e:0, f:0, g:0
     run  : runChain
 
   benchmark 'run() many   next    permanent',
@@ -126,12 +124,325 @@ benchmarks = benchmarks [
         functions.nextPermanent()
         functions.repeat(50, functions.empty)
       ]
-      buildContext: -> a:0, b:0, c:0, d:0, e:0, f:0, g:0
     run  : runChain
 
 
-  # add failed/paused/stopped stuff.
+  benchmark 'run() many   fail',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.fail()
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+  benchmark 'run() many   fail',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.fail 'testing'
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+
+  benchmark 'run() many   stop',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.stop()
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+  benchmark 'run() many   stop',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.stop  'testing'
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+  #
+  # TODO:
+  #
+  # support async so we can call resume()
+  benchmark 'run() many   pause',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.pause()
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+  benchmark 'run() many   pause',
+    setup: basicSetup
+      array:[
+        functions.repeat(50, functions.empty)
+        functions.pause  'testing'
+        functions.repeat(50, functions.empty)
+      ]
+    run  : runChain
+
+
   # add disable/enable stuff.
+  benchmark 'run() many   disabled chain',
+    run  : runChain
+    setup: ->
+      chain = buildChain array: flatten [
+        functions.repeat(101, functions.empty)
+      ]
+      chain.disable()
+      @setup = chain: chain#, runOptions: null
+      return
+
+  benchmark 'run() many   disabled chain    w/reason',
+    run  : runChain
+    setup: ->
+      chain = buildChain array: flatten [
+        functions.repeat(101, functions.empty)
+      ]
+      chain.disable 'testing'
+      @setup = chain: chain#, runOptions: null
+      return
+
+
+  benchmark 'run() many   disabled function w/reason',
+    run  : runChain
+    setup: ->
+      id = 'target'
+      @setup =
+        chain: buildChain array: flatten [
+          functions.repeat(50, functions.empty)
+          functions.id(id)
+          functions.repeat(50, functions.empty)
+        ]
+      @setup.chain.disable id, 'testing'
+      return
+
+
+  benchmark 'run() many   select disable none',
+    setup: -> @setup =
+      selector: (fn, index) -> false
+      chain   : buildChain array: functions.repeat(101, functions.empty)
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable()
+
+  benchmark 'run() many   select disable none   w/reason',
+    setup: -> @setup =
+      selector: (fn, index) -> false
+      chain   : buildChain array: functions.repeat(101, functions.empty)
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable 'testing'
+
+
+  benchmark 'run() many   select disable single',
+    setup: -> @setup =
+      selector: (fn, index) -> index is 50 # if fn.options?.id is 'target'
+      chain   : buildChain array: flatten [
+        functions.repeat(50, functions.empty)
+        functions.id 'target'
+        functions.repeat(50, functions.empty)
+      ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable()
+
+  benchmark 'run() many   select disable single   w/reason',
+    setup: -> @setup =
+      selector: (fn, index) -> index is 50 # if fn.options?.id is 'target'
+      chain   : buildChain array: flatten [
+        functions.repeat(50, functions.empty)
+        functions.id 'target'
+        functions.repeat(50, functions.empty)
+      ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable 'testing'
+
+
+  benchmark 'run() many   select disable multiple',
+    setup: ->
+      options = select: true
+      @setup =
+        selector: (fn) -> fn.options?.select is true
+        chain   : buildChain array: flatten [
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+        ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable()
+
+  benchmark 'run() many   select disable multiple   w/reason',
+    setup: ->
+      options = select: true
+      @setup =
+        selector: (fn) -> fn.options?.select is true
+        chain   : buildChain array: flatten [
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+        ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).disable 'testing'
+
+
+
+  benchmark 'run() many   select remove  none',
+    setup: -> @setup =
+      selector: (fn, index) -> false
+      chain   : buildChain array: functions.repeat(101, functions.empty)
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).remove()
+
+  benchmark 'run() many   select remove  none   w/reason',
+    setup: -> @setup =
+      selector: (fn, index) -> false
+      chain   : buildChain array: functions.repeat(101, functions.empty)
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).remove 'testing'
+
+
+  benchmark 'run() many   select remove  single',
+    setup: -> @setup =
+      selector: (fn, index) -> index is 50 # if fn.options?.id is 'target'
+      chain   : buildChain array: flatten [
+        functions.repeat(50, functions.empty)
+        functions.id 'target'
+        functions.repeat(50, functions.empty)
+      ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).remove()
+
+  benchmark 'run() many   select remove  single   w/reason',
+    setup: -> @setup =
+      selector: (fn, index) -> index is 50 # if fn.options?.id is 'target'
+      chain   : buildChain array: flatten [
+        functions.repeat(50, functions.empty)
+        functions.id 'target'
+        functions.repeat(50, functions.empty)
+      ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).remove 'testing'
+
+
+  benchmark 'run() many   select remove  multiple',
+    setup: ->
+      options = select: true
+      @setup =
+        selector: (fn, index) ->
+          console.log 'selector fn:',index,fn
+          fn.options?.select is true
+        chain   : buildChain array: flatten [
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.empty
+        ]
+      return
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      console.log 'chain array:',chain.array.length,chain.array
+      chain.select(selector).remove()
+
+  benchmark 'run() many   select remove  multiple   w/reason',
+    setup: ->
+      options = select: true
+      @setup =
+        selector: (fn) -> fn.options?.select is true
+        chain   : buildChain array: flatten [
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+          functions.repeat(10, functions.empty)
+          functions.options options
+        ]
+
+    run  : (repeat) ->
+      {chain, selector} = @setup
+      chain.select(selector).remove 'testing'
+
+
 
 ]
 
