@@ -251,6 +251,8 @@ module.exports = class Chain extends require('events').EventEmitter
         for fn, i in @array
           if which is fn?.options?.id then return i
 
+        # TODO:
+        # return error: 'unknown id', id: which
         return -1 # we didn't find it!
 
       when 'number' # they provided an index to use...
@@ -258,10 +260,14 @@ module.exports = class Chain extends require('events').EventEmitter
         if 0 <= which < @array.length then return which
 
         # otherwise, return an error about it
-        else return error:'Invalid index: ' + which
+        else return error:'Invalid index: ' + which # TODO: separate `which`
 
       # find the function in the array
       when 'function' then return @array.indexOf which
+        # TODO:
+        # index = @array.indexOf which
+        # if index > -1 then return index
+        # else error: 'unknown function', fn: which
 
       # woh! no good
       else
