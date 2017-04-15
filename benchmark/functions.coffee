@@ -14,3 +14,11 @@ module.exports =
   pause: (reason) -> (control) -> control.pause reason
   stop : (reason) -> (control) -> control.stop reason
   fail : (reason) -> (control) -> control.fail reason
+  id   : (id) ->
+    fn = ->
+    fn.options = id:id
+    return fn
+  options: (options) ->
+    fn = ->
+    fn.options = options
+    return fn
