@@ -132,7 +132,7 @@ class Benchmarks
 
     console.log 'storing benchmark results...'
     path = require('path').resolve __dirname, 'result.json'
-    content = JSON.stringify {@info}, null, 2
+    content = JSON.stringify({@info}, null, 2) + '\n'
     require('fs').writeFile path, content, 'utf8', (error) ->
       if error? then return console.error error
       console.log 'stored benchmark results to result.json'
