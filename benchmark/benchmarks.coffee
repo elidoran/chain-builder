@@ -91,18 +91,26 @@ class Benchmarks
 
     if info.old?
       oldTimeNum = info.old.seconds + (info.old.nanos / 1e9)
-      oldTime    = chalk.magenta @format padSize, oldTimeNum
       oldRateNum = info.old.repeat / oldTimeNum
       oldRate    = chalk.blue @format padSize, oldRateNum
+      oldTime    =
+        if info.old.seconds is 0 and info.old.nanos < 1e6
+          chalk.cyan pad padSize, format(info.old.nanos) + ' n'
+        else
+          chalk.magenta @format padSize, @time oldTimeNum, info.old.seconds, info.old.nanos
 
     else
       oldTime = '         N/A'
       oldRate = '         N/A'
 
     newTimeNum = info.elapsed[0] + (info.elapsed[1] / 1e9)
-    newTime    = chalk.magenta @format padSize, newTimeNum
     newRateNum = info.repeat / newTimeNum
     newRate    = chalk.blue @format padSize, newRateNum
+    newTime    =
+      if info.elapsed[0] is 0 and info.elapsed[1] < 1e6
+        chalk.cyan pad padSize, format(info.elapsed[1]) + ' n'
+      else
+        chalk.magenta @format padSize, newTimeNum
 
     if info.old?
       change = Math.round(((newRateNum - oldRateNum) / oldRateNum) * 100)
