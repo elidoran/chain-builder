@@ -204,19 +204,20 @@ describe 'test chain.remove()', ->
   it 'should return an error when chain is empty', ->
     chain.array = []
     result = chain.remove 0
-    assert.equal result.error, 'Invalid index: 0'
+    assert.equal result.error, 'Invalid index'
+    assert.equal result.index, 0
 
   it 'should return a false result when id isnt found', ->
     chain.array = []
     result = chain.remove 'id'
-    assert.equal result.result, false
-    assert.equal result.reason, 'not found'
+    assert.equal result.error, 'unknown id'
+    assert.equal result.id, 'id'
 
   it 'should return a false result when fn isnt found', ->
     chain.array = []
     result = chain.remove fn1
-    assert.equal result.result, false
-    assert.equal result.reason, 'not found'
+    assert.equal result.error, 'unknown function'
+    assert.equal result.fn, fn1
 
 
   it 'should remove fn1 from array by index', ->
@@ -562,8 +563,8 @@ describe 'test running chain', ->
   pause = (control, context) ->
     context.pause = true
     context.paused = true
-    resume = control.pause 'testing'
-    process.nextTick resume
+    actions = control.pause 'testing'
+    process.nextTick actions.resume.bind actions
 
   chain = null
   beforeEach ->
@@ -587,18 +588,6 @@ describe 'test running chain', ->
     assert.equal results.failed?.reason, 'caught error'
     assert.equal results.failed?.index, 0, 'function should be first in the array'
     assert.strictEqual results.failed?.fn, theFn
-
-
-  it 'should return received error result', ->
-    theError = null
-    theFn = -> error: 'test error'
-
-    chain.add theFn
-
-    results = chain.run()
-    
-    assert results, 'should return results'
-    assert.equal results.result.error, 'test error', 'results should contain the error'
 
 
 
@@ -854,15 +843,17 @@ describe 'test running chain', ->
         'nexter: post-next()'
       ]
 
+
+
   # b. async
-  # TODO: really, the above tests using control.next() are async-ish...
-  # TODO: change synch stuff above to *not* call next, move those down here.
   describe 'asynch\'ly', ->
-    unpaused = -> this.paused = false
+
+    unpaused = -> @paused = false
     beforeEach ->
       chain.add pause, unpaused, ran
 
     it 'without specifying a context should use default context and return it', (done) ->
+
       syncResult = chain.run done: (error, results) ->
         if error? then return done error
         assert results, 'should receive a results object'
@@ -871,6 +862,7 @@ describe 'test running chain', ->
         assert.equal results?.context?.paused, false, 'should have called last fn and set paused=false'
         assert.deepEqual syncResult?.paused, reason:'testing', index:0, fn:pause
         done()
+
 
     it 'with a specified context should use it and return it', (done) ->
       context = {}
@@ -998,6 +990,138 @@ describe 'test running chain', ->
         done()
 
 
+    it 'with a fail after pause', (done) ->
+
+      results = null
+
+      fn1 = (control) ->
+        actions = control.pause()
+        process.nextTick ->
+
+          assert results.paused, 'should be paused'
+          assert.equal results.paused.reason, true
+          assert.equal results.paused.index, 0
+
+          results = actions.fail 'testing', 'some error'
+
+          assert.equal results.result, false
+          assert results.context, 'should have context'
+          assert.equal results.context.paused, false, 'no longer paused'
+          assert.equal results.context.ran, false, 'didnt unpause and run thru'
+
+          assert results.failed, 'should have failed info'
+          assert.equal results.failed.reason, 'testing'
+          assert.equal results.failed.index, 0
+          assert.equal results.failed.fn, fn1
+          assert.equal results.failed.error, 'some error'
+
+          done()
+
+      chain.array = []
+      chain.add fn1, unpaused, ran
+
+      results = chain.run context: paused: false, ran: false
+
+
+    it 'with a fail after pause w/reason', (done) ->
+
+      results = null
+
+      fn1 = (control) ->
+        actions = control.pause 'testing'
+        process.nextTick ->
+
+          assert results.paused, 'should be paused'
+          assert.equal results.paused.reason, 'testing'
+          assert.equal results.paused.index, 0
+
+          results = actions.fail 'testing', 'some error'
+
+          assert.equal results.result, false
+          assert results.context, 'should have context'
+          assert.equal results.context.paused, false, 'no longer paused'
+          assert.equal results.context.ran, false, 'didnt unpause and run thru'
+
+          assert results.failed, 'should have failed info'
+          assert.equal results.failed.reason, 'testing'
+          assert.equal results.failed.index, 0
+          assert.equal results.failed.fn, fn1
+          assert.equal results.failed.error, 'some error'
+
+          done()
+
+      chain.array = []
+      chain.add fn1, unpaused, ran
+
+      results = chain.run context: paused: false, ran: false
+
+
+
+    it 'with a stop after pause', (done) ->
+
+      results = null
+
+      fn1 = (control) ->
+        actions = control.pause()
+        process.nextTick ->
+
+          assert results.paused, 'should be paused'
+          assert.equal results.paused.reason, true
+          assert.equal results.paused.index, 0
+
+          results = actions.stop 'testing'
+
+          assert.equal results.result, true
+          assert results.context, 'should have context'
+          assert.equal results.context.paused, false, 'no longer paused'
+          assert.equal results.context.ran, false, 'didnt unpause and run thru'
+
+          assert results.stopped, 'should have stopped info'
+          assert.equal results.stopped.reason, 'testing'
+          assert.equal results.stopped.index, 0
+          assert.equal results.stopped.fn, fn1
+
+          done()
+
+      chain.array = []
+      chain.add fn1, unpaused, ran
+
+      results = chain.run context: paused: false, ran: false
+
+
+    it 'with a stop after pause w/reason', (done) ->
+
+      results = null
+
+      fn1 = (control) ->
+        actions = control.pause 'testing'
+        process.nextTick ->
+
+          assert results.paused, 'should be paused'
+          assert.equal results.paused.reason, 'testing'
+          assert.equal results.paused.index, 0
+
+          results = actions.stop 'testing'
+
+          assert.equal results.result, true
+          assert results.context, 'should have context'
+          assert.equal results.context.paused, false, 'no longer paused'
+          assert.equal results.context.ran, false, 'didnt unpause and run thru'
+
+          assert results.stopped, 'should have stopped info'
+          assert.equal results.stopped.reason, 'testing'
+          assert.equal results.stopped.index, 0
+          assert.equal results.stopped.fn, fn1
+
+          done()
+
+      chain.array = []
+      chain.add fn1, unpaused, ran
+
+      results = chain.run context: paused: false, ran: false
+
+
+
     it 'with resume callback defaults and success', (done) ->
 
       # empty the array for this test
@@ -1005,8 +1129,8 @@ describe 'test running chain', ->
 
       # add in our resumer function
       chain.add (control, context) ->
-        resume = control.pause 'testing resume.callback'
-        callback = resume.callback()
+        actions = control.pause 'testing resume.callback'
+        callback = actions.callback()
         # call it later...
         process.nextTick -> callback null, 'result'
 
@@ -1024,8 +1148,8 @@ describe 'test running chain', ->
 
       # add in our resumer function
       chain.add (control, context) ->
-        resume = control.pause 'testing resume.callback'
-        callback = resume.callback null, 'mykey'
+        actions = control.pause 'testing resume.callback'
+        callback = actions.callback null, 'mykey'
         # call it later...
         process.nextTick -> callback null, 'value'
 
@@ -1042,8 +1166,8 @@ describe 'test running chain', ->
       chain.array = []
 
       failer = (control, context) ->
-        resume = control.pause 'testing resume.callback'
-        callback = resume.callback 'error!', 'mykey'
+        actions = control.pause 'testing resume.callback'
+        callback = actions.callback 'error!', 'mykey'
         # call it later...
         process.nextTick -> callback new Error 'some Error'
 
@@ -1059,6 +1183,39 @@ describe 'test running chain', ->
         assert.strictEqual res?.context?.mykey, undefined
 
         done()
+
+
+    it 'with resume after stop', (done) ->
+
+      results = null
+
+      stopper = (control, context) ->
+
+        actions = control.pause 'test pause'
+
+        process.nextTick -> actions.stop 'test stop'
+
+        # call it later...
+        process.nextTick ->
+
+          results = actions.resume()
+
+          assert results.context, 'should have a context'
+          assert.equal results.context.paused, false, 'shouldnt be paused'
+          assert.equal results.context.ran, false, 'shouldnt have run thru'
+
+          assert results.stopped, 'should have stopped info'
+          assert.deepEqual results.stopped,
+            reason: 'test stop', index: 0, fn: stopper
+
+          done()
+
+
+      # set the array for this test
+      chain.array = [stopper, unpaused, run]
+
+      results = chain.run context: paused:false, ran:false
+
 
 
 
@@ -1350,7 +1507,7 @@ describe 'test enable', ->
     results = chain.enable()
 
     assert.equal results.result, false, 'should fail because it\'s already enabled'
-    assert.equal results.reason, 'chain not disabled'
+    assert.equal results.reason, 'chain wasn\'t disabled'
 
   it 'should enable the chain', ->
 
@@ -1382,7 +1539,7 @@ describe 'test enable', ->
     results = chain.enable 0
 
     assert.equal results.result, false, 'should fail because it\'s already enabled'
-    assert.equal results.reason, 'function not disabled'
+    assert.equal results.reason, 'function wasn\'t disabled'
 
   it 'should enable the function by index', ->
 
