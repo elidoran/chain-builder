@@ -1,7 +1,22 @@
-### 0.13.0 - 2017/04/15
+### 0.13.0 - 2017/04/16
 
 1. added testing to achieve 100% code coverage
 2. added benchmarking to measure performance and compare to previous version
+3. stored performance results of current implementation
+4. revised implementation for better performance and clarity
+5. measured improvement via benchmark, including screenshot of result
+6. added both stop and fail actions to the object returned from `control.pause()`. Convenience instead of calling `fail()` or `stop()` and then `resume()`.
+7. handled the initial build options better getting rid of some versions which wouldn't work properly
+8. identified some functions which were doing something preventing them from being optimized by Node and fixed it
+9. removed all use of `delete`
+10. included properties in all object creations (and in constructors) to avoid slomo from adding a new property later.
+11. performance testing shows importance of specifying **all** properties in the context ahead of time (with nulls) instead of allowing extra properties to be added later in the run.
+12. fixed some inconsistencies in what was returned from a function
+13. split up the large `control._execute()` function and isolated its "try-catch" block in its own function.
+14. added testing to verify some functions are optimizable (needs to be applied to more)
+15. removed semi-colons from README code
+16. changed README for new pause actions
+17. moved commas around in example code
 
 
 ### 0.12.1 - 2017/04/15
