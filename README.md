@@ -411,7 +411,7 @@ I used it to enhance the current performance considerably:
 
 ![image showing performance comparison of new versus old with considerable increase](docs/chain-builder-improvement.png "Old version versus New version shows considerable improvement in the New version.")
 
-It also shows how important it is to provide a context which contains all the properties the chain run will use. Set them to `null` as placeholders. This makes the `context` object be in "fast mode". Otherwise, adding properties later will put it in "slomo". The benchmark runs with the properties not defined in the context take significantly longer to complete.
+It also shows how important it is to provide a context which contains all the properties the chain run will use. Set them to `null` as placeholders. This makes the `context` object be in "fast mode". Otherwise, adding properties later will put it in "slomo". The benchmarks which do not define the properties ahead of time in the context all significantly longer to complete than the ones with them pre-defined.
 
 Note, after that screenshot I updated the benchmark results formatting to show the nanoseconds for times so small they show as `0.000` seconds. I'll update this screenshot soon.
 
