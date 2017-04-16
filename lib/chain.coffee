@@ -1,3 +1,4 @@
+flatten    = require 'array-flatten'
 getOptions = require './get-options'
 Control    = require './control'
 
@@ -25,42 +26,54 @@ module.exports = class Chain extends require('events').EventEmitter
     @array = array
 
     # store the base of the context object (optional)
-    @_base  = options?.base
-    @_props = options?.props
+    @_base  = options.base if options?.base
+    @_props = options.props if options?.props
 
     # when a new context builder is specified then move default one to new prop
     if options?.buildContext?
       @_originalBuildContext = @_buildContext
       @_buildContext = options.buildContext
 
+    # set property so it's available for later use without adding it.
+    @_disabled = null
+
     # all done
     return
+
 
   # add functions to the array:
   #  chain.add fn
   #  chain.add fn1, fn2, fn3, ...
   #  chain.add [ fn1, fn2, ... ]
-  add: (fns...) ->
+  add: () ->
 
-    # unwrap array
-    if Array.isArray fns?[0] then fns = fns[0]
+    # optimization friendly method
+    fns = new Array arguments.length
+    fns[i] = arguments[i] for i in [0...arguments.length]
 
-    # remember how many we already have
+    # include any inner arrays into the main array. one big happy array.
+    fns = flatten fns
+
+    # remember how many we already have stored in our array
     length = @array.length
 
     # ensure each one is actually a function
     for fn in fns
       unless 'function' is typeof(fn) then return error:'must be a function', fn:fn
 
-    # append them into the array via splice()
-    @array.splice @array.length, 0, fns...
+    # add them into the array at the end
+    @array.push.apply @array, fns
 
     # build our result for both emit and return
-    result = result:true, added:fns, chain:this
+    result =
+      result: true
+      added : fns
+      chain : this
 
-    # if length is different then we actually added some, so emit 'add'
-    # Note: this exists because it's possible to call add with nothing and
-    # it would still emit an 'add' event despite not adding anything
+    # if length is different, then, we actually added some, so emit 'add'
+    # Note:
+    #   this exists because it's possible to call add() with nothing and
+    #   it would still emit an 'add' event despite not adding anything.
     if length isnt @array.length then @emit 'add', result
 
     # it's all good
@@ -76,31 +89,37 @@ module.exports = class Chain extends require('events').EventEmitter
     # find it based on the selector. may return an error
     index = @_findIndex which
 
-    # if there's an error then we're done, return it
+    # if there's an error then we're done, return the error
     if index?.error? then return index
 
     # use sub-operation so the select() stuff can also use the sub-operation.
-    # select() one passes the function first and then the index
+    # select() passes the function first and then the index.
     @_remove null, index, reason
 
+
   # used by both chain.remove() and chain.select(...).remove()
-  _remove: (_, index, reason = true) ->
+  _remove: (_, index, reason) ->
 
     # by default, return an empty object because we didn't remove anything
-    result = result:false, reason:reason, chain:this
+    result =
+      result : false
+      reason : 'not found'
+      chain  : this
+      removed: null
 
-    # if we found it tho
+    # if we found it. (nothing to do in else, but, coverage complains)
+    ### istanbul ignore else ###
     if index > -1
+
       # then remove it from the array and assign it into the result
       result.removed = @array.splice index, 1
 
       # we succeeded
       result.result = true
+      result.reason = reason ? true
 
       # let everyone know we removed it
       @emit 'remove', result
-
-    else result.reason = 'not found'
 
     # and return the result whether it's empty or not
     return result
@@ -128,37 +147,53 @@ module.exports = class Chain extends require('events').EventEmitter
   #       chain.disable('someid', { some: 'object'})
   disable: (which, reason) ->
 
-    # if they didn't pass any args then disable the whole chain and emit 'disable'
-    if arguments.length is 0 or (arguments.length is 1 and typeof which is 'string')
+    # if we have both args, or, if the one arg isn't a string,
+    # then disable one function.
+    if (which? and reason?) or (which? and 'string' isnt typeof which)
+
+      # find it based on the selector. may return an error
+      index = @_findIndex which
+
+      # if there's an error then we're done, return it
+      if index?.error? then return index
+
+      # get the fn
+      fn = @array[index]
+
+      # use sub-operation so the select() stuff can also use the sub-operation.
+      # select() one passes the function first and then the index.
+      @_disable fn, index, reason
+
+    # else, they want us to disable the whole chain.
+    else
       reason = which ? true
       @_disabled = reason
-      result = result:true, reason:reason, chain:this
+      result =
+        result: true
+        reason: reason
+        chain : this
       @emit 'disable', result
       return result
 
-    # find it based on the selector. may return an error
-    index = @_findIndex which
-
-    # if there's an error then we're done, return it
-    if index?.error? then return index
-
-    # get the fn
-    fn = @array[index]
-
-    # use sub-operation so the select() stuff can also use the sub-operation.
-    # select() one passes the function first and then the index.
-    @_disable fn, index, reason
 
   # the select() action passes the index as the second arg and the reason
   # is bumped to the third arg.
-  _disable: (fn, _, reason = true) ->
+  _disable: (fn, _, reasonArg) ->
 
-    # store the reason, create its options object if it's not there
+    reason = reasonArg ? true
+
+    # store the reason
     if fn.options? then fn.options.disabled = reason
+
+    # or, create its options object with the reason
     else fn.options = disabled: reason
 
     # create our result
-    result = result:true, fn:fn, reason:reason, chain:this
+    result =
+      result: true
+      fn    : fn
+      reason: reason
+      chain : this
 
     # tell everyone
     @emit 'disable', result
@@ -177,31 +212,31 @@ module.exports = class Chain extends require('events').EventEmitter
   #   chain.enable(someFunction)
   enable: (which) ->
 
-    # if there's no arg, or which doesn't exist, then enable the whole chain.
-    # Note: they could pass a null/undefined arg meaning to provide a value
-    # to identify a single function, and, because of `or not which?` we would
-    # enable the whole chain... so, don't use `or not which?` and let it
-    # return an error.
-    if arguments.length is 0 #or not which?
+    # if there's no arg (which doesn't exist), then enable the whole chain.
+    unless which?
 
       # create our result, defaults to false
-      result = result:false, chain:this
+      result =
+        result: false
+        reason: null
+        chain : this
 
       # ensure the chain is actually disabled...
       if @_disabled?
 
         # remove the disable marker
-        delete @_disabled
+        @_disabled = null
 
-        # now it's successful
+        # success
         result.result = true
+        result.reason = 'enabled chain'
 
-        #tell everyone
+        # tell everyone
         @emit 'enable', result
 
-      # tell them why we failed to disable
-      # Note: this isn't an error, only a reason why we didn't do any enabling
-      else result.reason = 'chain not disabled'
+      # otherwise, it isn't disabled, so, tell them why we failed to enable it.
+      # Note: this isn't an error, only a reason why we didn't do `enable` event.
+      else result.reason = 'chain wasn\'t disabled'
 
       return result
 
@@ -220,26 +255,33 @@ module.exports = class Chain extends require('events').EventEmitter
       # call sub-operation
       @_enable fn
 
+
   _enable: (fn) ->
 
     # create our result, defaults to false
-    result = result:false, fn:fn, chain:this
+    result =
+      result: false
+      reason: null
+      fn    : fn
+      chain : this
 
     # ensure it actually is disabled...
-    if fn?.options?.disabled?
+    if fn.options?.disabled?
 
-      # remove the disable...
-      delete fn?.options?.disabled
+      # remove the disabled marker...
+      fn.options.disabled = null
 
       # now it's successful
       result.result = true
+      result.reason = 'enabled'
 
       # tell everyone
       @emit 'enable', result
 
-    else result.reason = 'function not disabled'
+    else result.reason = 'function wasn\'t disabled'
 
     return result
+
 
   # used to find the index of a function based on index, id, or itself
   _findIndex: (which) ->
@@ -248,28 +290,23 @@ module.exports = class Chain extends require('events').EventEmitter
 
       when 'string' # it's an id of a function, so find it
 
-        # TODO:
-        # return i for fn, i in @array when which is fn?.options?.id
-        for fn, i in @array
-          if which is fn?.options?.id then return i
+        return i for fn, i in @array when which is fn.options?.id
 
-        # TODO:
-        # return error: 'unknown id', id: which
-        return -1 # we didn't find it!
+        # if we didn't return `i` from the for loop then ...
+        error: 'unknown id', id: which
 
       when 'number' # they provided an index to use...
         # if that's a valid index then return it
-        if 0 <= which < @array.length then return which
+        if 0 <= which < @array.length then which
 
         # otherwise, return an error about it
-        else return error:'Invalid index: ' + which # TODO: separate `which`
+        else error: 'Invalid index', index: which
 
       # find the function in the array
-      when 'function' then return @array.indexOf which
-        # TODO:
-        # index = @array.indexOf which
-        # if index > -1 then return index
-        # else error: 'unknown function', fn: which
+      when 'function'
+        index = @array.indexOf which
+        if index > -1 then return index
+        else error: 'unknown function', fn: which
 
       # woh! no good
       else
@@ -291,8 +328,8 @@ module.exports = class Chain extends require('events').EventEmitter
       result.removed = array  # provide what we removed
       @emit 'clear', result   # emit a remove event with the array we removed
 
-    else
-      # on second thought, an already empty array *is* a success...
+    # otherwise we're already "clear" with an empty array.
+    else # NOTE: an already empty array *is* a success...
       result.result = true
       result.reason = 'chain empty'
 
@@ -300,20 +337,25 @@ module.exports = class Chain extends require('events').EventEmitter
 
 
   # used to perform sub-operations on functions chosen by select() operation
-  _actor: (selector, action, args...) ->
+  _actor: (selector, action) ->
+
+    # optimization friendly method
+    args = new Array arguments.length
+    args[i] = arguments[i] for i in [0...arguments.length]
+
+    # NOTE:
+    #   leave the `selector` and `action` in `args` because we will use those
+    #   two slots to hold `fn` and `index` later.
+
     # alias
     chain = this
-
-    # create two spots in args for our 'fn' and 'index'
-    # (index 0, delete zero, add in two '')
-    args.splice 0, 0, '', ''
 
     # when doing the remove action on a function it messes up the `for fn,index`
     # iteration loop.
     # So, i pulled index out separately, and, I use array length changes to
     # affect the index value. then it doesn't go up one when we just removed
     # a function. and, it would go up if we added one, tho, I don't have an
-    # add action as part of select() stuff.
+    # add action as part of select() stuff (it could still be done...)
 
     # length at the start of the first operation, and, index starts at zero.
     array  = chain.array
@@ -331,6 +373,9 @@ module.exports = class Chain extends require('events').EventEmitter
       if selector fn, index
 
         # put both of them in there as the first two args in the slots we created above
+        # NOTE:
+        #  remember note above, this is where we use the array positions
+        #  containing the `selector` and `action` of `arguments`.
         args[0] = fn
         args[1] = index
 
@@ -348,7 +393,7 @@ module.exports = class Chain extends require('events').EventEmitter
         length = array.length
 
         # gather each action's results
-        results.push result
+        results[results.length] = result
 
       # we do the normal increment by one for the loop.
       # Note: this must happen every loop iteration
@@ -356,6 +401,7 @@ module.exports = class Chain extends require('events').EventEmitter
 
     # all done
     return result:true, results:results
+
 
   # create a selector function capable of selecting the desired member functions
   # and then apply the utility functions to them.
@@ -370,8 +416,9 @@ module.exports = class Chain extends require('events').EventEmitter
   # like: chain.remove(2), chain.disable(fn, 'reason'), chain.enable('someid')
   select: (selector) ->
 
-    # ensure the selector is a function
-    unless typeof selector is 'function'
+    # ensure the selector is a function.
+    # if it's not, then that's a problem which takes a little work to handle.
+    unless 'function' is typeof selector
 
       # create an error about this problem
       error =
@@ -384,60 +431,89 @@ module.exports = class Chain extends require('events').EventEmitter
       # return the error as part of this object, and, in case they don't check
       # for it, return the expected properties which call the function which
       # provides the error result.
-      return ops =
-        selector: selector
-        error  : error.error
-        disable: returnError
-        enable : returnError
-        remove : returnError
-        affect : returnError
+      error   : error.error
+      selector: selector
+      disable : returnError
+      enable  : returnError
+      remove  : returnError
+      affect  : returnError
 
-    # alias for below
-    chain = this
+    # okay, so `selector` is a function.
+    else
 
-    # return specially bound functions
-    return ops =
-      disable: @_actor.bind chain, selector, chain._disable
-      enable : @_actor.bind chain, selector, chain._enable
-      remove : @_actor.bind chain, selector, chain._remove
+      # alias for below
+      chain = this
+
+      # return 4 operation functions which use `selector`.
+      disable: (reason) -> chain._actor selector, chain._disable, reason
+      enable : (reason) -> chain._actor selector, chain._enable, reason
+      remove : (reason) -> chain._actor selector, chain._remove, reason
+
       # this one allows them to specify the action function to affect(...)
-      affect : @_actor.bind chain, selector#, affector is the action
+      affect : ->
+        # optimization friendly method.
+        # NOTE: makes an extra slot at the beginning to hold `selector`
+        args = new Array arguments.length + 1
+        args[i + 1] = arguments[i] for i in [0...arguments.length]
+        args[0] = selector
+        # call the actor with all the args.
+        chain._actor.apply chain, args
 
 
   # main function which begins the execution of the chain
   # optionally configure `context`, `done`, and `_buildContext`
   run: (options, done) ->
 
-    if @_disabled? # if we're disabled then tell them
-      return result:false, reason:'chain disabled', disabled:@_disabled
+    # if we're disabled then tell them; that's our result
+    if @_disabled?
+      result  : false
+      reason  : 'chain disabled'
+      disabled: @_disabled
 
-    ctx = @_buildContext options                   # build/use context
-    done = options?.done ? done                    # look for `done`
-    control = new Control this, @array, ctx, done  # create Control
-    @emit 'start', control:control, chain:this     # notify we're starting
-    result = control._execute()                    # start the chain
-    if control.paused?                             # a paused chain isn't done
-      results = paused:control.paused              # return only paused info
-    else                                           # we're done, synch'ly
-      results = @_finish result, control           # include available info
-    return results                                 # return results, synch'ly
+    # otherwise, execute the functions
+    else
+
+      ctx = @_buildContext options                   # build/use context
+
+      done = options?.done ? done                    # check for `done`
+      if done? then @once 'done', done               # "once" if it exists
+
+      control = new Control this, @array, ctx        # create Control
+
+      @emit 'start', control:control, chain:this     # notify we're starting
+
+      result = control._execute()                    # start the chain
+
+      if control.paused?                             # a paused chain isn't done
+        paused: control.paused                       #   return only paused info
+
+      else                                           # we're done, synch'ly
+        @_finish result, control                     #   include available info
 
 
   # builds the final `results`, calls `done`, and emits 'done'
   _finish: (result, control) ->
 
     # store it all together. `result` could be true/false or an object
-    results = result:result, context:control._context, chain:this
+    results =
+      result : result
+      context: control._context
+      chain  : this
+      # set all possible properties now at object creation.
+      stopped: null
+      failed : null
+      removed: null
 
     # if they called control.stop() or control.fail() then include that info
-    results.stopped = control.stopped if control.stopped?
-    results.failed  = control.failed  if control.failed?
+    results.stopped = control.stopped
+    results.failed  = control.failed
+
     # also include functions removed during this execution run by `control`
-    results.removed = control.removed if control.removed?
+    results.removed = control.removed
 
     # call the done function if one exists
-    error = result.error ? results.failed
-    control._done? error, results
+    error = result?.error ? results.failed
+    # control._done? error, results
 
     # emit done with the same info
     @emit 'done', error, results
@@ -450,6 +526,7 @@ module.exports = class Chain extends require('events').EventEmitter
   # also, this defualt implementation accepts a base object (prototype) to use
   # when creating a new context object, and a property descriptor
   _buildContext: (options) ->
+
     # if they specified a context to use, then use it
     if options?.context? then options.context
 
