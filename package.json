@@ -1,6 +1,6 @@
 {
   "name": "chain-builder",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "lib/index.js",
   "files": [
