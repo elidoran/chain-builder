@@ -32,11 +32,10 @@
     "prepublish": "npm run build",
     "postpublish": "npm run clean",
     "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test",
-    "test012": "nave use 0.12 npm test",
     "test4": "nave use 4.8 npm test",
     "test6": "nave use 6.10 npm test",
     "test7": "nave use 7.9 npm test",
-    "test-all": "npm run test012 && npm run test4 && npm run test6 && npm run test7",
+    "test-all": "npm run test4 && npm run test6 && npm run test7",
     "precoverage": "npm run clean",
     "coverage": "istanbul cover -x 'build/**' _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test",
     "publish-coverage": "npm run coverage && cat coverage/lcov.info | coveralls",
@@ -71,5 +70,8 @@
   },
   "dependencies": {
     "array-flatten": "^2.1.1"
+  },
+  "engines": {
+    "node": ">=4"
   }
 }
