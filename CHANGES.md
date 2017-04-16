@@ -17,6 +17,7 @@
 15. removed semi-colons from README code
 16. changed README for new pause actions
 17. moved commas around in example code
+18. added section in README about performance improvement, includes a screenshot of benchmark results
 
 
 ### 0.12.1 - 2017/04/15
