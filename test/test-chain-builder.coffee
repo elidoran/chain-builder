@@ -407,6 +407,28 @@ describe 'test chain.remove()', ->
     assert.strictEqual result.results[0].removed?[0], fn2
     assert.equal result.results[0].reason, reason
 
+  it 'should remove many functions with options selector', ->
+    reason = 'the reason'
+    f1 = ->
+    f2 = ->
+    f3 = ->
+    f4 = ->
+    f5 = ->
+    f6 = ->
+    f7 = ->
+    options = select:true
+    f2.options = f4.options = f6.options = options
+
+    chain.array = [ f1, f2, f3, f4, f5, f6, f7 ]
+    selector = (fn) -> (fn?.options?.select is true)
+    result = chain.select(selector).remove reason
+    assert.equal chain.array.length, 4, 'array should be three less'
+    assert.equal result.results.length, 3, 'there should be three internal action results'
+    assert.strictEqual result.results[0].removed?[0], f2
+    assert.strictEqual result.results[1].removed?[0], f4
+    assert.strictEqual result.results[2].removed?[0], f6
+    assert.equal result.results[0].reason, reason
+
 
 # 4. chain.clear()
 describe 'test chain.clear()', ->
