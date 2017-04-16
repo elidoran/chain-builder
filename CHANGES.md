@@ -1,8 +1,12 @@
-### 0.13.0 - 2017/04/13
+### 0.13.0 - 2017/04/15
 
 1. added testing to achieve 100% code coverage
 2. added benchmarking to measure performance and compare to previous version
 
+
+### 0.12.1 - 2017/04/15
+
+1. fixed [#6](https://github.com/elidoran/chain-builder/issues/6) so `select().remove()` works with multiple matches.
 
 ### 0.12.0 - 2017/04/12
 
