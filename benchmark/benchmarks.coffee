@@ -2,6 +2,8 @@ chalk  = require 'chalk'
 pad    = require 'pad'
 format = require 'comma-number'
 
+SEP = /[,\.]/
+
 class Benchmarks
 
   constructor: (@benchmarks) ->
@@ -48,28 +50,44 @@ class Benchmarks
     if store then @store()
 
 
-  format: (length, string) -> pad length, @crop length, format string
+  format: (length, num) -> pad length, @crop length, num, format num
 
-  crop: (length, string) ->
-    index = string.indexOf '.'
-    if index < 0 then index = length
-    else if index < 3 then index = 5
-    string[0 ... index]
+  crop: (length, num, string) ->
+
+    match = SEP.exec string
+
+    if match?
+
+      if match[0] is ','
+        string = string[0 ... match.index] + '.' + string[match.index + 1]
+        string +=
+          switch
+            when num < 1e6 then ' G'
+            when num < 1e9 then ' M'
+            when num < 1e12 then ' B'
+            when num < 1e15 then ' T'
+            when num < 1e18 then ' P'
+            else ' !'
+
+      else string[0..5]
+
+    else string[0...length]
+
 
   reportHeader: ->
-    padSize = 12
-    h1 = chalk.blue pad(padSize, 'old ops/sec')
-    h2 = ' |' + chalk.blue pad padSize, 'new ops/sec'
-    h3 = ' |' + pad 10, 'change'
-    h4 = ' |' + chalk.magenta pad padSize, 'old seconds'
-    h5 = ' |' + chalk.magenta pad padSize, 'new seconds'
+    padSize = 10
+    h1 = chalk.blue pad padSize, 'old ops/s'
+    h2 = ' |' + chalk.blue pad padSize, 'new ops/s'
+    h3 = ' |' + pad padSize - 1, 'change'
+    h4 = ' |' + chalk.magenta pad padSize, ' old secs'
+    h5 = ' |' + chalk.magenta pad padSize, ' new secs'
     h6 = ' |' + chalk.bold ' label'
     console.log h1 + h2 + h3 + h4 + h5 + h6
     console.log '----------------------------------------------------------------------------------------------'
 
   reportResult: (info) ->
     # info = {benchmark, repeat, elapsed, old}
-    padSize = 12
+    padSize = 10
 
     if info.old?
       oldTimeNum = info.old.seconds + (info.old.nanos / 1e9)
@@ -92,14 +110,14 @@ class Benchmarks
         if change > 0.01 then chalk.green
         else if change < -0.01 then chalk.red
         else chalk.black
-      change = color(@format 9, change.toFixed 0) + '%'
+      change = color(@format padSize - 2, change.toFixed 0)
 
-    else change = '      N/A '
+    else change = pad padSize - 2, 'N/A '
 
     label = chalk.bold info.benchmark.label
 
     console.log """
-    #{oldRate} |#{newRate} |#{change} |#{oldTime} |#{newTime} |  #{label}
+    #{oldRate} |#{newRate} |#{change}% |#{oldTime} |#{newTime} |  #{label}
     """
 
 
