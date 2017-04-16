@@ -136,7 +136,7 @@ benchmarks = benchmarks [
       ]
     run  : runChain
 
-  benchmark 'run() many   fail',
+  benchmark 'run() many   fail  w/reason',
     setup: basicSetup
       array:[
         functions.repeat(50, functions.empty)
@@ -155,7 +155,7 @@ benchmarks = benchmarks [
       ]
     run  : runChain
 
-  benchmark 'run() many   stop',
+  benchmark 'run() many   stop  w/reason',
     setup: basicSetup
       array:[
         functions.repeat(50, functions.empty)
@@ -177,7 +177,7 @@ benchmarks = benchmarks [
       ]
     run  : runChain
 
-  benchmark 'run() many   pause',
+  benchmark 'run() many   pause w/reason',
     setup: basicSetup
       array:[
         functions.repeat(50, functions.empty)
@@ -628,8 +628,21 @@ repeat = do ->
     Math.max 1, Number process.argv[index + 1]
   else 1
 
-benchmarks.run
-  old   : require './result.json'
-  repeat: repeat
-  report: '--report' in process.argv
-  store : '--store' in process.argv
+ask = require('readline').createInterface
+  input : process.stdin
+  output: process.stdout
+
+console.log "Chain Builder Benchmark (#{process.pid} #{if '--turbo' in process.execArgv then '- turbo' else ''})"
+ask.question 'Begin benchmark? (y/N)  ', (answer) ->
+
+  ask.close()
+
+  if answer? and (answer[0] is 'y' or answer[0] is 'Y')
+
+    benchmarks.run
+      old   : require './result.json'
+      repeat: repeat
+      report: '--report' in process.argv
+      store : '--store' in process.argv
+
+  else console.log 'quitting'
