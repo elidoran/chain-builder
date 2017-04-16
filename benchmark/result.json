@@ -4,55 +4,271 @@
       "label": "run() empty",
       "repeat": 1000000,
       "seconds": 0,
-      "nanos": 757235621
+      "nanos": 810470800
     },
     {
       "label": "run() single",
       "repeat": 1000000,
       "seconds": 1,
-      "nanos": 184922289
+      "nanos": 135137451
     },
     {
       "label": "run() many",
       "repeat": 1000000,
       "seconds": 15,
-      "nanos": 242509666
+      "nanos": 90194000
     },
     {
       "label": "run() single inc, n is   defined",
       "repeat": 1000000,
       "seconds": 0,
-      "nanos": 408913287
+      "nanos": 438361937
     },
     {
       "label": "run() single inc, n is undefined",
       "repeat": 1000000,
       "seconds": 7,
-      "nanos": 623836235
+      "nanos": 634467751
     },
     {
       "label": "run() many   inc, n is   defined",
+      "repeat": 1000000,
+      "seconds": 22,
+      "nanos": 800776459
+    },
+    {
+      "label": "run() many   inc, n is undefined",
+      "repeat": 1000000,
+      "seconds": 30,
+      "nanos": 232404456
+    },
+    {
+      "label": "run() many   inc, n is   defined",
+      "repeat": 1000000,
+      "seconds": 22,
+      "nanos": 22286148
+    },
+    {
+      "label": "run() many   inc, n is undefined",
+      "repeat": 1000000,
+      "seconds": 30,
+      "nanos": 236469240
+    },
+    {
+      "label": "run() many   inc,  all   defined",
       "repeat": 1000000,
       "seconds": 21,
-      "nanos": 212561968
+      "nanos": 999099294
     },
     {
-      "label": "run() many   inc, n is undefined",
+      "label": "run() many   inc,  all undefined",
       "repeat": 1000000,
-      "seconds": 28,
-      "nanos": 477240628
+      "seconds": 59,
+      "nanos": 230921342
     },
     {
-      "label": "run() many   inc, n is   defined",
+      "label": "run() many   context temporary",
       "repeat": 1000000,
-      "seconds": 19,
-      "nanos": 860602994
+      "seconds": 15,
+      "nanos": 201886221
     },
     {
-      "label": "run() many   inc, n is undefined",
+      "label": "run() many   context permanent",
       "repeat": 1000000,
-      "seconds": 28,
-      "nanos": 487030738
+      "seconds": 15,
+      "nanos": 201417010
+    },
+    {
+      "label": "run() many   next    temporary",
+      "repeat": 1000000,
+      "seconds": 15,
+      "nanos": 844678706
+    },
+    {
+      "label": "run() many   next    permanent",
+      "repeat": 1000000,
+      "seconds": 15,
+      "nanos": 885165829
+    },
+    {
+      "label": "run() many   fail",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 550698301
+    },
+    {
+      "label": "run() many   fail  w/reason",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 533924141
+    },
+    {
+      "label": "run() many   stop",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 589698613
+    },
+    {
+      "label": "run() many   stop  w/reason",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 599742710
+    },
+    {
+      "label": "run() many   pause",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 305387978
+    },
+    {
+      "label": "run() many   pause w/reason",
+      "repeat": 1000000,
+      "seconds": 8,
+      "nanos": 305130528
+    },
+    {
+      "label": "run() many   disabled chain",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 15496919
+    },
+    {
+      "label": "run() many   disabled chain    w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 15034293
+    },
+    {
+      "label": "run() many   disabled function w/reason",
+      "repeat": 1000000,
+      "seconds": 15,
+      "nanos": 685353801
+    },
+    {
+      "label": "select() disable none",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 39430
+    },
+    {
+      "label": "select() disable none     w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 20655
+    },
+    {
+      "label": "select() disable single",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 21813
+    },
+    {
+      "label": "select() disable single   w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 12753
+    },
+    {
+      "label": "select() disable multiple",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 15159
+    },
+    {
+      "label": "select() disable multiple w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 15072
+    },
+    {
+      "label": "select() enable  none",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 10652
+    },
+    {
+      "label": "select() enable  none     w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 10974
+    },
+    {
+      "label": "select() enable  single",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 29347
+    },
+    {
+      "label": "select() enable  single   w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 19132
+    },
+    {
+      "label": "select() enable  multiple",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 14752
+    },
+    {
+      "label": "select() enable  multiple w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 15097
+    },
+    {
+      "label": "select() remove  none",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 10568
+    },
+    {
+      "label": "select() remove  none     w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 11065
+    },
+    {
+      "label": "select() remove  single",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 9166
+    },
+    {
+      "label": "select() remove  single   w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 9728
+    },
+    {
+      "label": "select() remove  multiple",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 10321
+    },
+    {
+      "label": "select() remove  multiple w/reason",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 11166
+    },
+    {
+      "label": "select() affect  none",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 11173
+    },
+    {
+      "label": "select() affect  single",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 12553
+    },
+    {
+      "label": "select() affect  multiple",
+      "repeat": 1000000,
+      "seconds": 0,
+      "nanos": 12711
     }
   ]
 }
