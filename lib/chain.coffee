@@ -308,16 +308,20 @@ module.exports = class Chain extends require('events').EventEmitter
     # add action as part of select() stuff.
 
     # length at the start of the first operation, and, index starts at zero.
-    length = chain.array.length
-    index = 0
+    array  = chain.array
+    length = array.length
+    index  = 0
 
     # let's remember the results of each action
     results = []
 
-    for fn in chain.array
+    while index < length
+
+      fn = array[index]
 
       # apply the action to the function only if the selector say so
       if selector fn, index
+
         # put both of them in there as the first two args in the slots we created above
         args[0] = fn
         args[1] = index
@@ -326,14 +330,14 @@ module.exports = class Chain extends require('events').EventEmitter
         result = action.apply chain, args
 
         # compare length before the action and after the action
-        diff = chain.array.length - length
+        diff = array.length - length
 
         # apply the difference to the index.
         # when we remove one it's -1 so we reduce the index.
         index += diff
 
         # and then update the length
-        length = chain.array.length
+        length = array.length
 
         # gather each action's results
         results.push result
