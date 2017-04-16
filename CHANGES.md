@@ -1,3 +1,7 @@
+### 0.12.1 - 2017/04/15
+
+1. fixed [#6](https://github.com/elidoran/chain-builder/issues/6) so `select().remove()` works with multiple matches.
+
 ### 0.12.0 - 2017/04/12
 
 1. change this file: change to header lines for each date/version info
