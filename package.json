@@ -43,8 +43,8 @@
     "precoverage-lcov": "npm run clean",
     "coverage-lcov": "istanbul cover -x 'build/**' _mocha --report lcovonly -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/",
     "coverage-clean": "rm -rf ./coverage",
-    "benchmark": "coffee benchmark/index.coffee -- --report",
-    "benchmark-save": "coffee benchmark/index.coffee -- --store"
+    "benchmark": "coffee benchmark/index.coffee --nodejs '--turbo' -- --report",
+    "benchmark-save": "coffee benchmark/index.coffee --nodejs '--turbo' -- --store"
   },
   "repository": {
     "type": "git",
