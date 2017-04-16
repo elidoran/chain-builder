@@ -5,7 +5,7 @@ optimize = require '@optimal/fn'
 buildChain = require '../lib/index.coffee'
 getOptions = require '../lib/get-options.coffee'
 
-describe.only 'verify optimizability', ->
+describe 'verify optimizability', ->
 
   describe 'of builder', ->
 
