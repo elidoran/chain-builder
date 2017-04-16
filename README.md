@@ -33,9 +33,6 @@ Some of the features:
 
 # Table of Contents (JS5)
 
-[[JS6]](http://github.com/elidoran/chain-builder/blob/master/docs/README-JS6.md)
-[[CS]](http://github.com/elidoran/chain-builder/blob/master/docs/README.coffee.md)
-
 A. Usage
 
   1. [Basic](#usage-basic)
