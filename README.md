@@ -97,22 +97,22 @@ Here is an extremely basic example to show the basic parts working together.
 
 ```javascript
 var buildChain = require('chain-builder')
-  , chain = buildChain();
+  , chain = buildChain()
 
 // you have a function
-function fn1() { console.log('simple'); }
+function fn1() { console.log('simple') }
 
 // add it. (You can supply it to `buildChain()` as well)
-chain.add(fn1);
+chain.add(fn1)
 
 // run the chain with default options which creates an empty context
-var results = chain.run();
+var results = chain.run()
 
 // the results object is:
 results = {
-  result: true    // means it was a success. no error. no fail().
-  , context: {}   // the default context is an empty object.
-  , chain: /* the chain ... */
+  result: true,  // means it was a success. no error. no fail().
+  context: {},   // the default context is an empty object.
+  chain: /* the chain ... */
 }
 ```
 
@@ -131,37 +131,37 @@ function guard(control) {
   // if the 'message' property is missing from the context object
   if (!this.message) {
     // return a false result with this error message
-    control.fail('missing message');
+    control.fail('missing message')
   }
 }
 
 // for simpler functions there's no need to use either function params, use `this`
 function fn1() {
   // the initial `message` value is provided to `chain.run()` below
-  this.message += ' there';  // makes `message` = 'Hello there'
+  this.message += ' there'  // makes `message` = 'Hello there'
 }
 
 function fn2() {
-  this.message += ', Bob';   // makes message = 'Hello there, Bob'
+  this.message += ', Bob'   // makes message = 'Hello there, Bob'
 }
 
 function fn3() {
   // writes full message to console
-  console.log(this.message);
+  console.log(this.message)
 }
 
-var chain = buildChain(fn1, fn2, fn3);
+var chain = buildChain(fn1, fn2, fn3)
 // OR: add them after a chain is created
-chain.add(fn1, fn2, fn3);
+chain.add(fn1, fn2, fn3)
 // OR: add them as an array
-chain.add([ fn1, fn2, fn3 ]);
+chain.add([ fn1, fn2, fn3 ])
 
     // a mutable context object given to each fn in the chain
 var context = { message: 'Hello' }
     // the options provided to run() may contain a context object to use
   , runOptions = { context: context }
     // run the chain with our context
-  , result = chain.run(runOptions);
+  , result = chain.run(runOptions)
 
 // what it will do:
 // 1. check the existence of the `message` property in the context
@@ -169,29 +169,29 @@ var context = { message: 'Hello' }
 // 3. print 'hello there, Bob' in function fn3
 // 4. return a result object which contains:
 result = {
-  result: true
-  , context: { message:'Hello there, Bob' }
-  , chain: /* ... the chain used to run it */
+  result: true,
+  context: { message:'Hello there, Bob' },
+  chain: /* ... the chain used to run it */
 }
 
 // now let's cause a fail by not providing a message property.
 // we'll reuse the above stuff, so delete the property.
-delete context.message;
+delete context.message
 
 // and call it again
-result = chain.run(runOptions);
+result = chain.run(runOptions)
 
 // what it will do:
 // 1. 'guard' will check for `message` in context and find it missing
 // 2. it will then call `control.fail()` with a reason
 // 3. chain returns a result object which contains:
 result = {
-  result:false  // fail() causes a false result
-  , context: {} // the context which we provided and didn't change
-  , failed: {   // info about the fail() call
-      reason: 'missing message' // the message given to fail()
-      , index: 0  // the index of the chain function which called fail()
-      , fn: ...   // the guard function which called control.fail()
+  result: false,  // fail() causes a false result
+  context: {}, // the context which we provided and didn't change
+  failed: {    // info about the fail() call
+    reason: 'missing message', // the message given to fail()
+    index: 0,  // the index of the chain function which called fail()
+    fn: ...    // the guard function which called control.fail()
   }
   , chain: /* the chain used to run it */
 }
@@ -221,102 +221,101 @@ Show many advanced features:
 ```javascript
 var buildChain = require('chain-builder')
   , localFunctionsArray = require('./some/lib/fn/provider')
-  , chain = buildChain(localFunctionsArray);
+  , chain = buildChain(localFunctionsArray)
 
-chain.add(require('some-module-with-fns'));
+chain.add(require('some-module-with-fns'))
 // one of those functions has an id we can use to remove it:
 // function someFn() {}
 // someFn.options = { id: 'the-one-we-dont-want' }
-chain.remove('the-one-we-dont-want');
+chain.remove('the-one-we-dont-want')
 
-chain.add(require('another-module'));
+chain.add(require('another-module'))
 // some function from that module is disabled by default, so, enable it
-chain.enable('the.optin.id');
+chain.enable('the.optin.id')
 
 // imagine the select function is:
 // function selectCacheFunctions(fn, index) {
 //   // if it has a 'labels' array in its function options
-//   var hasArray = fn.options && fn.options.labels;
+//   var hasArray = fn.options && fn.options.labels
 //   // if it has the array and the array has 'cache' in it
 //   // then we want to "select" this one, so, return true.
-//   return hasArray && (fn.options.labels.indexOf('cache') > -1);
+//   return hasArray && (fn.options.labels.indexOf('cache') > -1)
 // }
 // it's possible to store the returned object and reuse its functions.
-var selectCacheFns = chain.select(require('./select-cache-fns'));
+var selectCacheFns = chain.select(require('./select-cache-fns'))
 // use it now to remove the matching functions,
 // and optionally give a reason for removal.
-selectCacheFns.remove('We are using a different caching method');
+selectCacheFns.remove('We are using a different caching method')
 
 // maybe we don't want that one right now while running some initial warmups.
 // we'll enable it later when real use begins.
-chain.disable('monitor');
+chain.disable('monitor')
 
 // let's say we had a function written to be run on a different object so
 // normally we would `bind()` it. Bind causes two function calls. So, instead,
 // `chain-builder` allows you to specify what to bind it to as an option on it.
 // then, it's used when chain-builder calls it. so, one function call.
-var notBoundFn = someObject.someFunction;
-notBoundFn.options = { this: someObject };
+var notBoundFn = someObject.someFunction
+notBoundFn.options = { this: someObject }
 
 function tempOverride(control) {
   // create some object for the next one to use instead
-  var contextForNextFunction = {};
+  var contextForNextFunction = {}
   // tell control to use it *only once* (second arg defaults to false)
-  control.context(contextForNextFunction);
+  control.context(contextForNextFunction)
 }
 
 function iRunOnce(control) {
   // this function wants to do something only the first time it's run.
   // then remove itself forever. maybe it does some deferred init...
-  control.remove(); // optionally provide a reason
+  control.remove() // optionally provide a reason
 }
 
 function iPauseForAsync(control, context) {
   // pause it by getting the resume function.
   // optionally provide a reason it's paused.
-  var resume = control.pause('wait for file read')
+  var actions = control.pause('wait for file read')
 
   // optionally, create a standard callback for use with readFile
-    , callback = resume.callback('read file failed', 'theFileContent');
+    , callback = actions.callback('read file failed', 'theFileContent')
 
   // do something async, use our handy callback
-  fs.readFile('some/path/to/a/file.txt', 'utf8', callback);
+  fs.readFile('some/path/to/a/file.txt', 'utf8', callback)
 
   // or, write it out yourself and call fail() or resume() directly
   fs.readFile('some/path/to/a/file.txt', 'utf8', function(err, content) {
     if (err) {
-      control.fail('read file failed', err);
+      actions.fail('read file failed', err)
     } else {
       // second param, `context`, comes in handy now instead of `this`
-      context.theFileContent = content;
+      context.theFileContent = content
+      actions.resume()
     }
 
-    // always resume() whether there's an error or not.
-    resume();
-  });
+  })
 
   // or, do something scheduled like:
-  setTimeout(resume, 10*1000);
+  setTimeout(resume, 10*1000)
 }
 
 function iStopSometimes(control, context) {
   if (this.theFileContent === 'we did it already') {
-    control.stop('we already have what we need');
+    control.stop('we already have what we need')
   } else {
     // permanently replace the `context` with a new empty one
-    control.context({}, true);
+    control.context({}, true)
   }
 }
 
 function iRetrySometimes(control) {
   // let the rest of the chain do its work, we'll do something on its way back.
   // can provide a new context by passing to next() just like context()
-  var result = control.next();
+  var result = control.next()
 
   // now we have the result of the calls after this function.
   // if there was something we can retry, then call things again.
   if (result.hasSomeRetryableProblem) {
-    result = control.next();
+    result = control.next()
     // could loop on this,
     // could pause each time and wait for outside influence...
   }
@@ -328,28 +327,28 @@ function iRetrySometimes(control) {
 // this could be a class instance and have functions on it as well.
 var context = {}
 // the run() accepts options including the `context` we just created
-  , runOptions = { context: context };
+  , runOptions = { context: context }
 
 // Or, we can affect the context object which is built by default using
-// Object.create(base, props);
+// Object.create(base, props)
 var runOptions2 = {
   base: {
     // some constant
-    config: 'value'
+    config: 'value',
     // some helper function you want your functions to have access to
     // via this.helperFn() or context.helperFn()
-    , helperFn: function(input) { return 'something'; }
+    helperFn: function(input) { return 'something' }
  }
-};
+}
 
 // run it with our options
-var result = chain.run(runOptions);
+var result = chain.run(runOptions)
 
 // result contains:
 result = {
-  result   : true
-  , context: /* the context we provided */
-  , chain  : /* the chain... */
+  result : true,
+  context: /* the context we provided */,
+  chain  : /* the chain... */
 }
 
 // lastly, remember all the events emitted from chain allow
@@ -376,12 +375,12 @@ Here's an example of how to implement it with features:
 
 ```javascript
 // get that library
-order = require('ordering');
+order = require('ordering')
 
 // use a listener for both 'add' and 'remove' events
 function markChanged(event) {
   // mark the chain as no longer ordered
-  event.chain.__isOrdered = false;
+  event.chain.__isOrdered = false
 }
 
 // use a listener for 'start' which will order an unordered array
@@ -389,15 +388,15 @@ function ensureOrdered(event) {
   // unless it has specifically been set to true then we order it.
   // the first 'start' it may be undefined, we'll order it then.
   if (event.chain.__isOrdered !== true) {
-    order(event.chain.array);
-    event.chain.__isOrdered = true;
+    order(event.chain.array)
+    event.chain.__isOrdered = true
   }
 }
 
 // add listeners to any chain instance you want ordered
-chain.on('add', markChanged);
-chain.on('remove', markChanged);
-chain.on('start', ensureOrdered);
+chain.on('add', markChanged)
+chain.on('remove', markChanged)
+chain.on('start', ensureOrdered)
 // Note, didn't listen to 'clear' because that causes
 // an empty array which *is* "ordered".
 ```
@@ -442,7 +441,7 @@ A "chain of command" example is in the [simple example](#usage-simple). Each fun
 
 A "pipeline/filter" may call `result = control.next()` to execute the later functions, then, do more work after that, and finally return the received `result` (or their own result, if desired). This allows it to do work *after* the other functions were called. Note, this assumes a synchronous execution through the entire chain afterwards. If a later function uses `control.pause()` then a result containing the paused info will be returned to `control.next()`.
 
-Asynchronous steps are achievable using `resume = control.pause()`. Once called, the chain will wait to continue execution until the *resume* function is called. The *pause* function accepts a `reason` value which will stored in the *control*. Note, the current result will be returned back through the synchronous executions and return a final result containing the `paused` information.
+Asynchronous steps are achievable using `actions = control.pause()`. Once called, the chain will wait to continue execution until the `actions.resume()` function is called. The *pause* function accepts a `reason` value which will stored in the *control*. Note, the current result will be returned back through the synchronous executions and return a final result containing the `paused` information.
 
 Sometimes it's helpful to end a chain early because its work is complete without calling the later functions. Use `control.stop()` to do that. It will return a result back through the synchronous executions. The *stop* function accepts a `reason` value which will be part of the returned results.
 
@@ -472,43 +471,43 @@ Each of these stores the same information into the *control*:
 Here's an example of using `control.stop()`:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
-function fn1() { this.done = true; }
-function fn2(control) { if(this.done) control.stop('we are done'); }
-function fn3() { console.log('I wont run'); }
+function fn1() { this.done = true }
+function fn2(control) { if(this.done) control.stop('we are done') }
+function fn3() { console.log('I wont run') }
 
-var chain = buildChain({array:[ fn1, fn2, fn3 ]});
+var chain = buildChain({array:[ fn1, fn2, fn3 ]})
 
-var result = chain.run({ context:{done:false} });
+var result = chain.run({ context:{done:false} })
 // fn3 will never run.
 result = {
-  result   : true
-  , stopped: { reason:'we are done', index:1, fn:fn2 }
-  , chain  : // the chain
+  result : true,
+  stopped: { reason:'we are done', index:1, fn:fn2 },
+  chain  : // the chain
 }
 ```
 
 Here's an example of using `control.fail()`:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
-function fn1() { this.problem = true; }
-function fn2(control) { if(this.problem) control.fail('there is a problem'); }
-function fn3() { console.log('I wont run'); }
+function fn1() { this.problem = true }
+function fn2(control) { if(this.problem) control.fail('there is a problem') }
+function fn3() { console.log('I wont run') }
 
-var chain = buildChain({ array:[ fn1, fn2, fn3 ] });
+var chain = buildChain({ array:[ fn1, fn2, fn3 ] })
 
-var context = { problem:false };
+var context = { problem:false }
 
-var result = chain.run({ context:context });
+var result = chain.run({ context:context })
 // fn3 will never run.
 result = {
-  result  : false
-  , failed: { reason:'there is a problem', index:1, fn:fn2 }
-  , chain : // the chain
-};
+  result: false,
+  failed: { reason:'there is a problem', index:1, fn:fn2 },
+  chain : // the chain
+}
 ```
 
 ### Example: Use Context to Pass on a Value
@@ -516,14 +515,14 @@ result = {
 Shown many times above already, the context object is available to each function. Here is an explicit example of doing so:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
-function fn1() { this.give = 'high 5'; }
-function fn2() { if(this.give == 'high 5') 'cheer'; }
+function fn1() { this.give = 'high 5' }
+function fn2() { if(this.give == 'high 5') 'cheer' }
 
-var chain = buildChain({ array:[ fn1, fn2 ] });
+var chain = buildChain({ array:[ fn1, fn2 ] })
 
-var result = chain.run();  // will use an empty object as context
+var result = chain.run()  // will use an empty object as context
 // fn2 will, uh, *cheer*
 ```
 
@@ -532,24 +531,24 @@ var result = chain.run();  // will use an empty object as context
 What if a function throws an error?
 
 ```javascript
-buildChain = require('chain-builder');
+buildChain = require('chain-builder')
 
-function fn1() { throw new Error('my bad'); }
+function fn1() { throw new Error('my bad') }
 
-var chain = buildChain({ array:[fn1] });
+var chain = buildChain({ array:[fn1] })
 
-var result = chain.run();
+var result = chain.run()
 
 // fn1 will throw an error
 // chain will catch it, end the chain, and include it in the result
 result = {
-  result : true
-  , context: {}
-  , failed: {
-      reason : 'caught error'
-      , index: 0
-      , fn   : fn1
-      , error: // the thrown error
+  result: true,
+  context: {},
+  failed: {
+      reason: 'caught error',
+      index: 0,
+      fn   : fn1,
+      error: // the thrown error
   }
 }
 ```
@@ -562,30 +561,30 @@ This style allows performing work after the later functions return. It relies on
 Here is an example:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
 function fn1(control) {
   // provide some value into the context from some operation
-  this.value = doSomeOperation();
+  this.value = doSomeOperation()
 
   // call the later functions which will do something with the value
-  var result = control.next();
+  var result = control.next()
 
   // check for an error before doing more work
   if (result && !!result.error) {  
       // do something after the rest of the chain has run
-      this.anotherValue = someOtherOperation(this.valueFromLaterFunctions);
+      this.anotherValue = someOtherOperation(this.valueFromLaterFunctions)
   }
 
   // then let the function return the result it received
   // Note, this can be changed as well, or, not returned at all.
-  return result;
+  return result
 }
 
-function fn2() { this.valueFromLaterFunctions = someOperationOfItsOwn(); }
+function fn2() { this.valueFromLaterFunctions = someOperationOfItsOwn() }
 
 var chain = buildChain({ array:[fn1, fn2] })
-  , result = chain.run();
+  , result = chain.run()
 
 // the result is:
 result = {
@@ -603,29 +602,29 @@ Although the above examples show synchronous execution it is possible to run a c
 An example:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
-function fn1() { console.log(this.message1); }
+function fn1() { console.log(this.message1) }
 
 function fn2(control, context) {
-  console.log(this.message2);
+  console.log(this.message2)
   // returns a function to call to resume execution
-  var resume = control.pause('just because')
-   schedule resume in a second
-  setTimeout(resume, 1000);
+  var actions = control.pause('just because')
+  // schedule resume in a second
+  setTimeout(function() { actions.resume() }, 1000)
   return
 }
 
-function fn3() { console.log(this.message3); }
+function fn3() { console.log(this.message3) }
 
 var chain = buildChain({ array:[fn1, fn2, fn3] })
   , result = chain.run({
       context: {
-        message1  : 'in fn1'
-        , message2: 'in fn2 and pausing'
-        , message3: 'resumed and in fn3'
+        message1: 'in fn1',
+        message2: 'in fn2 and pausing',
+        message3: 'resumed and in fn3'
       }
-    });
+    })
 
 // returned when chain is paused
 result = {
@@ -633,7 +632,7 @@ result = {
 }
 
 // this will be printed before the chain is resumed and fn3 is run
-console.log('back from chain.run()');
+console.log('back from chain.run()')
 
 /* the console will print:
  in fn1
@@ -650,38 +649,38 @@ Using `setTimeout()` and other similar functions will make extra work to get tha
 Here's an example:
 
 ```javascript
-var buildChain = require('chain-builder');
+var buildChain = require('chain-builder')
 
-function fn1() { console.log(this.message1); }
+function fn1() { console.log(this.message1) }
 
 function fn2(control, context) {
-  console.log(this.message2);
+  console.log(this.message2)
   // returns a function to call to resume execution
-  var resume = control.pause('just because');
-  setTimeout(resume, 1000); // schedule resume in a second
+  var actions = control.pause('just because')
+  setTimeout(function() { actions.resume() }, 1000) // schedule resume in a second
   return
 }
 
-function fn3() { console.log(this.message3); }
+function fn3() { console.log(this.message3) }
 
-var chain = buildChain({ array:[fn1, fn2, fn3] });
+var chain = buildChain({ array:[fn1, fn2, fn3] })
 
 // specify a done callback as part of the options object which will be run when
 // the chain run is finished
 var context = {
-  message1: 'in fn1'
-  message2: 'in fn2 and pausing'
+  message1: 'in fn1',
+  message2: 'in fn2 and pausing',
   message3: 'resumed and in fn3'
 }
 
 var result = chain.run({
-  context:context
-  , done: function(error, results) {
+  context:context,
+  done: function(error, results) {
     // the results object is the same as what chain.run()
     // returns when synchronous
-    console.log('in done');
+    console.log('in done')
   }
-});
+})
 
 result = { // returned when chain is paused
   paused: { reason: 'just because', index:1, fn:fn2 }
@@ -689,7 +688,7 @@ result = { // returned when chain is paused
 
 // this will be printed before the chain is resumed and fn3 is run, and,
 // before the done callback is called, of course
-console.log('back from chain.run()');
+console.log('back from chain.run()')
 
 /* the console will print:
  in fn1
@@ -712,7 +711,7 @@ It is possible to make them different for advanced use. Please, be careful :)
 
 ```javascript
 function (control, context) {
-  console.log('<-- that context');
+  console.log('<-- that context')
 }
 ```
 
@@ -720,7 +719,7 @@ function (control, context) {
 
 ```javascript
 function(control, context) {
-  console.log('that context-->', this.someProperty);
+  console.log('that context-->', this.someProperty)
 }
 ```
 
@@ -730,18 +729,18 @@ Provide an options object on the function which includes a `this` property. When
 
 ```javascript
 var buildChain = require('chain-builder')
-  , specificThis = { some:'special this' };
+  , specificThis = { some:'special this' }
 
 function fn(control, sharedContext) {
-  console.log('*this* is specificThis. some=', this.some);
-  console.log('sharedContext is a shared ', sharedContext.shared);
+  console.log('*this* is specificThis. some=', this.some)
+  console.log('sharedContext is a shared ', sharedContext.shared)
 }
 
-fn.options = { this: specificThis };
+fn.options = { this: specificThis }
 
-var chain = buildChain({ array:[fn] });
+var chain = buildChain({ array:[fn] })
 
-chain.run({ context: shared:'object' });
+chain.run({ context: shared:'object' })
 
 /* prints:
 
@@ -761,23 +760,23 @@ See:
 
 ```javascript
 // we'll use bind on this one, that's a one and a capital Oh
-function fn1Original() { console.log(this.message); }
+function fn1Original() { console.log(this.message) }
 var fn1This = { message:'I am two calls' }
-  , fn1Bound = fn1.bind(fn1This);
+  , fn1Bound = fn1.bind(fn1This)
 
 // we'll use the `options.this` on this one
-function fn2() { console.log(this.message); }
+function fn2() { console.log(this.message) }
 var fn2This = { message:'I am one call' }
 fn2.options = { this:specialThis }
 
-var chain = buildChain();
+var chain = buildChain()
 
-chain.add(fn1Bound, fn2);
-chain.run();
+chain.add(fn1Bound, fn2)
+chain.run()
 
 // for fn1, it is equivalent to this:
 // the chain will call the bound function like this:
-fn1Bound.call(context, control, context);
+fn1Bound.call(context, control, context)
 
 // when called, the bound function will use apply to call
 // the original function with the fn1This
@@ -789,7 +788,7 @@ fn1Bound() {
 
 // for fn2, it is simpler because it passes the special this to the
 // first *call*. So, no second call. No need for bind().
-fn2.call(fn2.options.this, control, context);
+fn2.call(fn2.options.this, control, context)
 ```
 
 Note, using `control.context()` overrides the *context* provided to the next function. Using `fn.options.this` overrides the *this*. This means, it's possible to completely change what a function receives as context and this and have a different view than all other functions called in a chain.
@@ -810,40 +809,40 @@ Here is an example of an impermanent override:
 ```javascript
 var buildChain = require('chain-builder')
   , defaultContext = {}
-  , overrideContext = {};
+  , overrideContext = {}
 
-function fn1() { this.fn1 = 'this'; }
+function fn1() { this.fn1 = 'this' }
 
-function fn2(control, context) { context.fn2 = 'context'; }
+function fn2(control, context) { context.fn2 = 'context' }
 
 function fn3(control) {
-  this.fn3 = 'this';
-  control.context(overrideContext);
+  this.fn3 = 'this'
+  control.context(overrideContext)
 }
 
 function fn4(control, context) {
-  this.fn4 = 'this';
-  context.fn4 += ', context';
+  this.fn4 = 'this'
+  context.fn4 += ', context'
 }
 
 function fn5(control, context) {
-  this.fn5 = 'this';
-  context.fn5 += ', context';
+  this.fn5 = 'this'
+  context.fn5 += ', context'
 }
 
 var chain = buildChain({ array:[fn1, fn2, fn3, fn4, fn5] })
-  , result = chain.run({ context:defaultContext });
+  , result = chain.run({ context:defaultContext })
 
 // result is:
 result = {
-  result:true
-  , context: { // this is the default context, missing `fn4`
-    fn1  : 'this'
-    , fn2: 'context'
-    , fn3: 'this'
-    , fn5: 'this, context'
-  }
-  , chain: // the chain
+  result: true,
+  context: { // this is the default context, missing `fn4`
+    fn1: 'this',
+    fn2: 'context',
+    fn3: 'this',
+    fn5: 'this, context'
+  },
+  chain: // the chain
 }
 
 // the overrideContext is:
@@ -859,52 +858,52 @@ Here is an example of a permanent override:
 ```javascript
 var buildChain = require('chain-builder')
   , defaultContext = {}
-  , overrideContext = {};
+  , overrideContext = {}
 
-function fn1() { this.fn1 = 'this'; }
+function fn1() { this.fn1 = 'this' }
 
-function fn2(_, context) { context.fn2 = 'context'; }
+function fn2(_, context) { context.fn2 = 'context' }
 
 function fn3(control) {
-  this.fn3 = 'this';
+  this.fn3 = 'this'
   control.context(overrideContext, true) // <-- the `true` makes it permanent
 }
 
 function fn4(control, context) {
-  this.fn4 = 'this';
-  context.fn4 += ', context';
+  this.fn4 = 'this'
+  context.fn4 += ', context'
 }
 
 function fn5(control, context) {
-  this.fn5 = 'this';
-  context.fn5 += ', context';
+  this.fn5 = 'this'
+  context.fn5 += ', context'
 }
 
 var chain = buildChain({ array:[fn1, fn2, fn3, fn4, fn5] })
-  , result = chain.run({ context:defaultContext });
+  , result = chain.run({ context:defaultContext })
 
 // result contains:
 result = {
-  result:true
-  , context: {  // <-- this is the overrideContext
-    fn4 : 'this, context'
-    , fn5 : 'this, context'
+  result: true,
+  context: {  // <-- this is the overrideContext
+    fn4 : 'this, context',
+    fn5 : 'this, context'
   }
 }
 
 // wasn't returned in final result, doesn't have fn4/fn5
 // defaultContext contains:
 defaultContext = {
-  fn1  : 'this'
-  , fn2: 'context'
-  , fn3: 'this'
+  fn1: 'this',
+  fn2: 'context',
+  fn3: 'this'
 }
 
 // was in final result, contains fn's after the override
 // overrideContext contains:
 overrideContext = {
-  fn4  : 'this, context'
-  , fn5: 'this, context'
+  fn4: 'this, context',
+  fn5: 'this, context'
 }
 ```
 
@@ -936,21 +935,21 @@ The `base` and `props` are used in `Object.create(base, props)` to build the def
 
 ```javascript
 function worker(control, context) {
-  context.num = context.sum(context.num, 456);
+  context.num = context.sum(context.num, 456)
 }
 
 var base = {
-    num: 123
-    , sum: function(a, b) { return a + b; }
+    num: 123,
+    sum: function(a, b) { return a + b }
   }
   , runOptions = { base: base }
-  , result = chain.run(runOptions);
+  , result = chain.run(runOptions)
 
 // results ...
 result = {
-  result   : true
-  , chain  : // the chain...
-  , context: {
+  result : true,
+  chain  : /* the chain... */,
+  context: {
     num: 579  // sum of 123 and 456
     // no `sum` because that's a prototype property.
     // do `delete context.num` and then `context.num` you'd get: 123
@@ -966,12 +965,12 @@ The `buildContext` option, the "context builder", is a function accepting the "o
 
 ```javascript
 var buildChain = require('chain-builder')
-  , SomeClass = require('some-module');
+  , SomeClass = require('some-module')
 
 // this is the kind of function you'd provide as `buildContext` in options.
 function contextBuilder(options) {
   if (options && options.context) {
-    return options.context;
+    return options.context
   } else {
     // the options are from `chain.run(options)`
     return new SomeClass((options && options.someOptions) || {})
@@ -980,19 +979,19 @@ function contextBuilder(options) {
 
 function worker(control, context) {
   // the `context` is the instance of SomeClass.
-  var something = context.useSomeFunction();
-  context.doSomethingElse();
+  var something = context.useSomeFunction()
+  context.doSomethingElse()
 }
 
 var chain = buildChain({ buildContext: contextBuilder, array:[ worker ] })
   , runOptions = { someOptions:{ example: 'value' } }
-  , result = chain.run(runOptions);
+  , result = chain.run(runOptions)
 
 // result...
 result = {
-  result   : true
-  , chain  : // the chain
-  , context: { /* the instance of SomeClass */ }
+  result : true,
+  chain  : /* the chain */,
+  context: { /* the instance of SomeClass */ }
 }
 ```
 
@@ -1033,34 +1032,34 @@ Keep in mind, the returned object may not have the final contents when `control.
 Examples:
 
 ```javascript
-var result;
+var result
 
 // use default context, no done callback.
-result = chain.run();
+result = chain.run()
 
 // override the context
-result = chain.run({ context:{} });
+result = chain.run({ context:{} })
 
 // and provide a done callback as second arg
-result = chain.run({ context:{}}, function onDone() {});
+result = chain.run({ context:{}}, function onDone() {})
 
 // put done callback into run options (first arg)
 result = chain.run({ context:{}, done: function onDone() {
   // on done do this...
-}});
+}})
 
 // provide a `base`, prototype, for the context
-result = chain.run({ base: someProtoObject });
+result = chain.run({ base: someProtoObject })
 
 // provide both a `base`, prototype, and a props description for the context
 // see documentation for Object.create(base, props) ...
-result = chain.run({ base: someProtoObject, props: somePropsDesc });
+result = chain.run({ base: someProtoObject, props: somePropsDesc })
 
 // override the context builder completely
 // see examples above in the chain builder docs.
 result = chain.run({ buildContext: function contextBuilder(options) {
   // get context from options, or create it here...
-}});
+}})
 ```
 
 
@@ -1085,13 +1084,13 @@ Examples:
 
 ```javascript
 // add a single function
-chain.add(fn1);
+chain.add(fn1)
 
 // add multiple functions
-chain.add(fn1, fn2, fn3);
+chain.add(fn1, fn2, fn3)
 
 // add using an array
-chain.add([ fn1, fn2, fn3 ]);
+chain.add([ fn1, fn2, fn3 ])
 ```
 
 
@@ -1122,49 +1121,49 @@ A `remove` event is emitted with the same object described above as the return o
 Examples:
 
 ```javascript
-var result;
+var result
 
 // remove a function via its index.
 // this removes the third function.
-result = chain.remove(2);
+result = chain.remove(2)
 
 // remove a function via itself
-result = chain.remove(fn1);
+result = chain.remove(fn1)
 
 // remove using the function's `id`
 // function must have an `options` property,
 // which is an object, and it must have an `id` property of 'theid'
-result = chain.remove('theid');
+result = chain.remove('theid')
 
 // provide a reason as the second arg for any of the above types:
-result = chain.remove(/* any of the above */, 'some reason');
+result = chain.remove(/* any of the above */, 'some reason')
 
 // if a removal is successful the result is:
 result = {
-  result   : true
-  , reason : true // the reason provided, or `true` by default
-  , removed: [ ]  // array containing the removed function
+  result : true,
+  reason : true, // the reason provided, or `true` by default
+  removed: [ ]  // array containing the removed function
 }
 
 // if an invalid index is used then the result is:
 result = {
-  result: false
-  , reason: 'Invalid index: 0' // zero would be the actual index specified
+  result: false,
+  reason: 'Invalid index: 0' // zero would be the actual index specified
 }
 
 // if a function is specified and it isn't found, either by itself ref, or
 // by its id, then the result is:
 result = {
-  result: false
-  , reason: 'not found'
+  result: false,
+  reason: 'not found'
 }
 
 // if an invalid value is specified then an error is returned:
 // (anything other than: number, string, and function)
 result = {
-  result  : false
-  , reason: 'Requires a string (ID), an index, or the function'
-  , which : // the thing given to the remove() call
+  result: false,
+  reason: 'Requires a string (ID), an index, or the function',
+  which : // the thing given to the remove() call
 }
 ```
 
@@ -1178,12 +1177,12 @@ If the chain is already empty then the return, and the emitted event, will have 
 Example:
 
 ```javascript
-var result = chain.clear();
+var result = chain.clear()
 result = {
-  result: true
-  , removed: [ /* all functions removed */ ]
+  result: true,
+  removed: [ /* all functions removed */ ],
   // if array was already empty then it'll have:
-  , reason: 'chain empty'
+  reason: 'chain empty'
 }
 ```
 
@@ -1222,53 +1221,53 @@ A `disable` event is emitted containing the same result object as the return obj
 Examples:
 
 ```javascript
-var result;
+var result
 
 // disable the entire chain.
-result = chain.disable();
+result = chain.disable()
 result = {
-  result: true
-  , reason: true // reason defaults to `true`
-  , chain: // the chain
+  result: true,
+  reason: true, // reason defaults to `true`
+  chain: // the chain
 }
 
 // disable the entire chain with a reason
-result = chain.disable('some reason');
+result = chain.disable('some reason')
 result = {
-  result: true
-  , reason: 'some reason' // reason specified
-  , chain: // the chain
+  result: true,
+  reason: 'some reason', // reason specified
+  chain: // the chain
 }
 
 
 // disable a specific function
 // there are three different ways to specify which function to disable
-var which;
+var which
 
 // 1. specify an index of a function
-which = 3;
+which = 3
 
 // 2. or specify the function itself
-which = someFunction;
+which = someFunction
 
 // 3. or specify the string id of the function
-which = 'theid';
+which = 'theid'
 
-result = chain.disable(which, 'some reason');
+result = chain.disable(which, 'some reason')
 
 result = {
-  result  : true
-  , reason: 'some reason' // specified reason, or `true`
-  , fn    : // the function disabled
+  result: true,
+  reason: 'some reason', // specified reason, or `true`
+  fn    : // the function disabled
 }
 
 // Note, the `reason` is optional when specifying the index or function.
 // NOT when specifying the `id`.
-chain.disable(3);         // is okay
-chain.disable(someFn);    // is okay
+chain.disable(3)         // is okay
+chain.disable(someFn)    // is okay
 
 // NOOOOOO. this would disable the entire chain with reason 'some-id'.
-chain.disable('some-id');
+chain.disable('some-id')
 ```
 
 
@@ -1300,43 +1299,43 @@ Note, if the target is **not disabled** then no `enable` event will be emitted.
 Examples:
 
 ```javascript
-var result;
+var result
 
 // enable the entire chain.
-result = chain.enable();
+result = chain.enable()
 result = {
-  result: true
-  , chain: // the chain
+  result: true,
+  chain: /* the chain */
 }
 
 
 // enable a specific function
 // there are three different ways to specify which function to enable
-var which;
+var which
 
 // 1. specify an index of a function
-which = 3;
+which = 3
 
 // 2. or specify the function itself
-which = someFunction;
+which = someFunction
 
 // 3. or specify the string id of the function
-which = 'theid';
+which = 'theid'
 
-result = chain.enable(which);
+result = chain.enable(which)
 
 result = {
-  result  : true
-  , fn    : // the function enabled
+  result: true,
+  fn    : // the function enabled
 }
 
 // if the function or chain is NOT disabled:
 result = {
-  result  : false
+  result: false,
   // for enable()
-  , reason: 'chain not disabled'
+  reason: 'chain wasn\'t disabled',
   // for enable(which)
-  , reason: 'function is not disabled'
+  reason: 'function wasn\'t disabled',
 }
 ```
 
@@ -1366,24 +1365,24 @@ Examples:
 
 ```javascript
 function selector(fn, index) {
-  return (/* something you care about on the function or the index */);
+  return (/* something you care about on the function or the index */)
   // (index == 3)
   // (fn.options && fn.options.id == 'someid')
   // (fn.options && fn.options.tags && fn.options.tags.indexOf('sometag') > -1)
 }
 
 // this `select` is reusable.
-var select = chain.select(selector);
+var select = chain.select(selector)
 
 // call the sub-operation with optional args
-select.remove('some reason');
-select.disable('any reason');
-select.enable('blah reason');
+select.remove('some reason')
+select.disable('any reason')
+select.enable('blah reason')
 
 // the affect() function is special. you provide another function:
 select.affect(function(fn, index) {
   // do something with to/with the function...
-});
+})
 ```
 
 
@@ -1426,7 +1425,7 @@ function worker(control) {
   this.something = 'new value'
 
   // call the others:
-  var result = control.next();
+  var result = control.next()
 
   // do some post work
 }
@@ -1435,20 +1434,20 @@ function overridingWorker(control) {
   // do some pre work
 
   // like, create a new context for the others to use
-  var newContext = { override: 'context' };
+  var newContext = { override: 'context' }
 
   // then call the rest of the functions.
-  var result = control.next(newContext, true);
+  var result = control.next(newContext, true)
 
   // do some post work
 }
 
 function retryWorker(control) {
-  var result = control.next();
+  var result = control.next()
 
   // if there's something worth retrying, call next again
   if (result.failed && result.failed.reason == 'some retry-able reason') {
-    result = control.next();
+    result = control.next()
   }
 }
 ```
@@ -1471,23 +1470,23 @@ Examples:
 ```javascript
 // only the next function called will receive the tempContext.
 function tempOverrider(control) {
-  var tempContext = { temp: 'context' };
-  control.context(tempContext);
+  var tempContext = { temp: 'context' }
+  control.context(tempContext)
 }
 
 // this will change the context stored in the Control permanently
 function overrider(control) {
-  var newContext = { replacement: 'context' };
-  control.context(newContext);
+  var newContext = { replacement: 'context' }
+  control.context(newContext)
 }
 ```
 
 
 ### API: control.pause()
 
-Asynchronous execution is possible using `control.pause()` to retrieve a `resume()` function. The chain will wait until that function is called to begin executing again.
+Asynchronous execution is possible using `control.pause()` to retrieve an object with a `resume()` function. The chain will wait until that function is called to begin executing again.
 
-There is an additional helper function on the returned `resume` function named `callback`. Use that to create a resume callback which accepts the standard parameters `(error, result)` and handles calling `control.fail()` with an error message and the error, or, setting the `result` into the context for you.
+There is an additional helper function on the returned object named `callback`. Use that to create a resume callback which accepts the standard parameters `(error, result)` and handles calling `control.fail()` with an error message and the error, or, setting the `result` into the context for you.
 
 Parameters:
 
@@ -1495,7 +1494,12 @@ Parameters:
 
 Returns:
 
-A function which, when called (no params), will resume execution of the chain. Has a `callback` property which is another function to create an `(error, result)` style callback function which handles those for you.
+An object 3 actions and a callback generator:
+
+1. **resume** - used to begin chain execution from where it was paused
+2. **stop** - ends the pause and stops execution at the point where it was paused. Accepts a reason argument.
+3. **fail** - same as stop except it's a failure and accepts both a reason and an error argument like `control.fail()`.
+4. **callback** - function to create an `(error, result)` style callback function which handles those for you.
 
 Callback helper Parameters:
 
@@ -1512,9 +1516,9 @@ A simple use of the resume function:
 
 ```javascript
 function simpleResume(control) {
-  var resume = control.pause('wait for a bit');
+  var actions = control.pause('wait for a bit')
   // resume in a little bit...
-  setTimeout(resume, 1234);
+  setTimeout(function() { actions.resume() }, 1234)
 }
 ```
 
@@ -1522,18 +1526,16 @@ Using `resume()` within a callback:
 
 ```javascript
 function worker(control, context) {
-  var resume = control.pause('because i said so');
+  var actions = control.pause('because i said so')
 
   fs.readFile('./some/file.ext', 'utf8', function callback(error, content) {
     if (error) {
-      control.fail('Failed to read config file', error);
+      actions.fail('Failed to read config file', error)
     } else {
-      context.fileContent = content;
+      context.fileContent = content
+      actions.resume()
     }
-
-    // always call resume()
-    resume();
-  });
+  })
 }
 ```
 
@@ -1541,10 +1543,10 @@ Using the `resume.callback()` for the same results:
 
 ```javascript
 function worker(control) {
-  var resume = control.pause('because i said so')
-    , callback = resume.callback('Failed to read config file', 'fileContent');
+  var actions = control.pause('because i said so')
+    , callback = actions.callback('Failed to read config file', 'fileContent')
 
-  fs.readFile('./some/file.ext', 'utf8', callback);
+  fs.readFile('./some/file.ext', 'utf8', callback)
 }
 
 // let's look at what an error would look like as well as success
@@ -1552,41 +1554,41 @@ function onDone(error, result) {
   if (error) {
     // the `error` will be the `failed` object like:
     error = {
-      reason : 'Failed to read config file' // message given to resume.callback
-      , index: 0      // worker was first in the array
-      , fun  : worker // the worker function
+      reason: 'Failed to read config file', // message given to resume.callback
+      index : 0,      // worker was first in the array
+      fun   : worker  // the worker function
     }
 
     // the `result` will always exist, error or not.
     // if there was an error, the result is:
     result = {
-      result : false
-      , chain: // the chain
-      , context: {} // the context (which we didn't do anything to)
-      , failed: { /* this is the error object described above */ }
+      result : false,
+      chain: /* the chain */,
+      context: {}, // the context (which we didn't do anything to)
+      failed: { /* this is the error object described above */ }
     }
 
   } else {
     // if there was no error then the result is:
     result = {
-      result   : true
-      , chain  : // the chain
-      , context: {}
+      result   : true,
+      chain  : /* the chain */,
+      context: {}
     }
   }
 }
 
 // leave out other common stuff for brevity... imagine we setup a chain
-var result = chain.run({}, onDone);
+var result = chain.run({}, onDone)
 
 // when pause() was called it returns that info to the `result` here.
 result = {
   paused: {
-    reason : 'because i said so' // reason provided to pause()
-    , index: 0                   // worker function was first in array
-    , fn   : worker              // our worker function
+    reason: 'because i said so', // reason provided to pause()
+    index : 0,                   // worker function was first in array
+    fn    : worker               // our worker function
   }
-};
+}
 ```
 
 
@@ -1614,20 +1616,20 @@ Example:
 ```javascript
 function stopper(control) {
   if (this.somethingMeaningWeAreDone) {
-    return control.stop('we have what we need');
+    return control.stop('we have what we need')
   }
 }
 
 // the final result:
 result = {
-  result   : true  // true because a stop() is still a success
-  , chain  : // the chain
-  , stopped: { // when stop() is called this object is in results
-    reason : 'we have what we need' // message supplied to stop()
-    , index: 0       // the index of the stopper function in the chain
-    , fn   : stopper // the function which called stop()
+  result : true,  // true because a stop() is still a success
+  chain  : /* the chain */,
+  stopped: { // when stop() is called this object is in results
+    reason: 'we have what we need', // message supplied to stop()
+    index: 0,       // the index of the stopper function in the chain
+    fn   : stopper  // the function which called stop()
   }
-};
+}
 ```
 
 
@@ -1654,20 +1656,20 @@ Example:
 ```javascript
 function failer(control) {
   if (this.somethingBad) {
-    return control.fail('the sky is falling!');
+    return control.fail('the sky is falling!')
   }
 }
 
 // the final result:
 result = {
-  result: false
-  , chain: // the chain
-  , failed: { // when fail() is called this object is in results
-    reason : 'the sky is falling!' // message supplied to stop()
-    , index: 0      // the index of the stopper function in the chain
-    , fn   : failer // the function which called fail()
+  result: false,
+  chain: /* the chain */,
+  failed: { // when fail() is called this object is in results
+    reason: 'the sky is falling!', // message supplied to stop()
+    index: 0,      // the index of the stopper function in the chain
+    fn   : failer  // the function which called fail()
   }
-};
+}
 ```
 
 
@@ -1693,7 +1695,7 @@ Examples:
 
 ```javascript
 function disabler(control) {
-  return control.disable('I\'ve had enough for now.');
+  return control.disable('I\'ve had enough for now.')
 }
 ```
 
@@ -1722,19 +1724,19 @@ Examples:
 
 ```javascript
 function quitter(control) {
-  return control.remove('I quit.');
+  return control.remove('I quit.')
 }
 
 // the final result will contain functions which removed during the
 // execution run:
 result = {
-  result  : true // assuming it's a successful run
-  , chain :      // the chain
-  , context: {}  // the final context..
-  , removed: [
+  result: true, // assuming it's a successful run
+  chain : /* the chain */,
+  context: {},  // the final context..
+  removed: [
     quitter // the function which removed itself via control.remove()
   ]
-};
+}
 ```
 
 
