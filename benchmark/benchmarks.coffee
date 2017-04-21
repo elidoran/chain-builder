@@ -97,7 +97,7 @@ class Benchmarks
         if info.old.seconds is 0 and info.old.nanos < 1e6
           chalk.cyan pad padSize, format(info.old.nanos) + ' n'
         else
-          chalk.magenta @format padSize, @time oldTimeNum, info.old.seconds, info.old.nanos
+          chalk.magenta @format padSize, oldTimeNum
 
     else
       oldTime = '         N/A'
