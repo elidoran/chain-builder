@@ -100,8 +100,8 @@ class Benchmarks
           chalk.magenta @format padSize, oldTimeNum
 
     else
-      oldTime = '         N/A'
-      oldRate = '         N/A'
+      oldTime = '       N/A'
+      oldRate = '       N/A'
 
     newTimeNum = info.elapsed[0] + (info.elapsed[1] / 1e9)
     newRateNum = info.repeat / newTimeNum
