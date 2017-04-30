@@ -1,4 +1,4 @@
-flatten    = require 'array-flatten'
+flatten    = require '@flatten/array'
 getOptions = require './get-options'
 Control    = require './control'
 

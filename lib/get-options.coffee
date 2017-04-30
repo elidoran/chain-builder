@@ -1,4 +1,4 @@
-flatten = require 'array-flatten'
+flatten = require '@flatten/array'
 
 # buildChain(someFn, someFn2)
 # buildChain([ someFn, someFn2 ], [moreFns, moreFns2])
