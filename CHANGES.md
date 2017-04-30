@@ -1,3 +1,9 @@
+### 0.13.1 - 2017/04/30
+
+1. use @flatten/array
+2. fix formatting of '    NA' text
+3. remove redundant entry for 'coverage/' in .gitignore
+
 ### 0.13.0 - 2017/04/16
 
 1. added testing to achieve 100% code coverage
