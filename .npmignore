@@ -7,4 +7,5 @@ build/
 benchmark/
 coverage/
 docs/
+examples/
 test/
