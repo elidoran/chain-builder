@@ -1,3 +1,9 @@
+### 0.13.2 - 2017/05/23
+
+1. update deps
+2. specify exact files (specifying `"lib"` then included the CS files despite the `.npmigore` rule)
+3. remove `array-flatten` as a dev dep (using `@flatten/array` as a dep now)
+
 ### 0.13.1 - 2017/04/30
 
 1. use @flatten/array
