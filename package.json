@@ -37,7 +37,7 @@
     "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test",
     "test4": "nave use 4.8 npm test",
     "test6": "nave use 6.10 npm test",
-    "test7": "nave use 7.9 npm test",
+    "test7": "nave use 7.10 npm test",
     "test-all": "npm run test4 && npm run test6 && npm run test7",
     "precoverage": "npm run clean",
     "coverage": "istanbul cover -x 'build/**' _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test",
