@@ -41,10 +41,8 @@
     "test-all": "npm run test4 && npm run test6 && npm run test7",
     "precoverage": "npm run clean",
     "coverage": "istanbul cover -x 'build/**' _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test",
-    "publish-coverage": "npm run coverage && cat coverage/lcov.info | coveralls",
     "precoverage-lcov": "npm run clean",
     "coverage-lcov": "istanbul cover -x 'build/**' _mocha --report lcovonly -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/",
-    "coverage-clean": "rm -rf ./coverage",
     "benchmark": "coffee benchmark/index.coffee --nodejs '--turbo' -- --report",
     "benchmark-save": "coffee benchmark/index.coffee --nodejs '--turbo' -- --store"
   },
