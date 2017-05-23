@@ -4,7 +4,10 @@
   "description": "Manage an array of functions and execute them in a series with a variety of flows.",
   "main": "lib/index.js",
   "files": [
-    "lib"
+    "lib/index.js",
+    "lib/chain.js",
+    "lib/control.js",
+    "lib/get-options.js"
   ],
   "keywords": [
     "command",
