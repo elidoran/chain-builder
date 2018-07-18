@@ -1,6 +1,5 @@
 # chain-builder
 [![Build Status](https://travis-ci.org/elidoran/chain-builder.svg?branch=master)](https://travis-ci.org/elidoran/chain-builder)
-[![Dependency Status](https://gemnasium.com/elidoran/chain-builder.png)](https://gemnasium.com/elidoran/chain-builder)
 [![npm version](https://badge.fury.io/js/chain-builder.svg)](http://badge.fury.io/js/chain-builder)
 [![Coverage Status](https://coveralls.io/repos/github/elidoran/chain-builder/badge.svg?branch=master)](https://coveralls.io/github/elidoran/chain-builder?branch=master)
 
