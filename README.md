@@ -411,6 +411,14 @@ It also shows how important it is to provide a context which contains all the pr
 
 Note, after that screenshot I updated the benchmark results formatting to show the nanoseconds for times so small they show as `0.000` seconds. I'll update this screenshot soon.
 
+To run the benchmark:
+
+```sh
+# the default repeat is '1' (for testing benchmark)
+# so, specify a larger value for the real test.
+npm run benchmark -- --repeat 1000000
+```
+
 
 ### Execution: Events
 
