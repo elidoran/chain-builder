@@ -1,3 +1,14 @@
+### 0.13.3 - 2018/07/18
+
+1. update deps (not coffee-coverage due to issue with coffeescript@1.12.7)
+2. switch to @flatten/array in benchmark script
+3. add note about running benchmark with repeat value to README
+4. drop node 7, add node 10
+5. remove gemnasium badge (GitLab bought it...)
+6. add 2018 to LICENSE
+7. drop 'coverage-lcov' from package.json and .travis.yml in favor of 'coverage'
+8. update mocha args for newer mocha version (--compilers to --require and add tail to glob)
+
 ### 0.13.2 - 2017/05/23
 
 1. update deps
