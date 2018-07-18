@@ -1,4 +1,4 @@
-flatten    = require 'array-flatten'
+flatten    = require '@flatten/array'
 
 buildChain = require '../lib/index'
 
